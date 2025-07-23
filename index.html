@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Space Invaders - Enhanced Edition</title>
     <link rel="stylesheet" href="style.css" />
   </head>
@@ -29,8 +29,8 @@
         <div class="menu-content" id="mainContent">
           <h1>🚀 SPACE INVADERS 🚀</h1>
           <p>Defend Earth from alien invasion!</p>
-          <button id="startBtn" onclick="startGame()">🚀 START MISSION</button>
-          <button id="quickPlayBtn" onclick="startGame()">⚡ QUICK PLAY</button>
+          <button id="startBtn">🚀 START MISSION</button>
+          <button id="quickPlayBtn">⚡ QUICK PLAY</button>
         </div>
 
         <!-- Settings Menu -->
@@ -147,6 +147,10 @@
     </div>
 
     <!-- Audio elements -->
+    <audio id="backgroundMusic" preload="auto" loop style="display: none">
+      <source src="song/retro-game-music-245230.mp3" type="audio/mpeg" />
+      Your browser does not support the audio element.
+    </audio>
     <audio id="shootSound" preload="auto">
       <source
         src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjeF0fPWeiwFJHfH8N2QQAoUXrTp66hVFApGn+DyvGIYBjc="
@@ -172,9 +176,9 @@
         const contents = document.querySelectorAll(".menu-content");
         contents.forEach((content) => content.classList.add("hidden"));
 
-        // Remove active class from all tabs
-        const tabs = document.querySelectorAll(".nav-tab");
-        tabs.forEach((tab) => tab.classList.remove("active"));
+        // Remove active class from all nav items
+        const navItems = document.querySelectorAll(".nav-item");
+        navItems.forEach((item) => item.classList.remove("active"));
 
         // Show selected content
         const contentElement = document.getElementById(tabName + "Content");
@@ -182,12 +186,12 @@
           contentElement.classList.remove("hidden");
         }
 
-        // Add active class to clicked tab
-        const activeTab = document.querySelector(
-          `[onclick="showContent('${tabName}')"]`
+        // Add active class to clicked nav item
+        const activeNavItem = document.querySelector(
+          `[data-menu="${tabName}"]`
         );
-        if (activeTab) {
-          activeTab.classList.add("active");
+        if (activeNavItem) {
+          activeNavItem.classList.add("active");
         }
       }
 
@@ -209,8 +213,78 @@
 
       // Initialize settings
       document.addEventListener("DOMContentLoaded", function () {
+        // Wait for script_fixed.js to load and ensure settings exist
+        if (!window.settings) {
+          console.log("Settings not found, initializing...");
+          window.settings = {
+            soundEnabled: true,
+            musicEnabled: true,
+            difficulty: "normal",
+            graphics: "high",
+            controlMode: "mouse",
+            mouseActive: true,
+          };
+        }
+
+        console.log("Settings initialized:", window.settings);
+
+        // Add navigation event listeners
+        const navItems = document.querySelectorAll(".nav-item");
+        navItems.forEach((item) => {
+          item.addEventListener("click", function () {
+            const menuName = this.getAttribute("data-menu");
+            showContent(menuName);
+          });
+        });
+
         // Set default tab
         showContent("main");
+
+        // Auto-start music on first user interaction
+        let userInteracted = false;
+        function enableMusicOnInteraction() {
+          if (!userInteracted) {
+            console.log("First user interaction detected");
+            userInteracted = true;
+            const backgroundMusic = document.getElementById("backgroundMusic");
+            console.log("Background music element found:", backgroundMusic);
+            console.log("Settings:", window.settings);
+
+            if (
+              backgroundMusic &&
+              window.settings &&
+              window.settings.musicEnabled
+            ) {
+              console.log("Attempting to start music on interaction");
+              backgroundMusic.volume = 0.3;
+              backgroundMusic.currentTime = 0;
+              const playPromise = backgroundMusic.play();
+              if (playPromise !== undefined) {
+                playPromise
+                  .then(() => {
+                    console.log(
+                      "Music started successfully on user interaction"
+                    );
+                  })
+                  .catch((error) => {
+                    console.log("Failed to start music on interaction:", error);
+                  });
+              }
+            }
+            // Remove event listeners after first interaction
+            document.removeEventListener("click", enableMusicOnInteraction);
+            document.removeEventListener("keydown", enableMusicOnInteraction);
+            document.removeEventListener(
+              "touchstart",
+              enableMusicOnInteraction
+            );
+          }
+        }
+
+        // Add event listeners for user interaction
+        document.addEventListener("click", enableMusicOnInteraction);
+        document.addEventListener("keydown", enableMusicOnInteraction);
+        document.addEventListener("touchstart", enableMusicOnInteraction);
 
         // Initialize settings buttons
         const soundBtn = document.getElementById("soundToggle");
@@ -221,7 +295,38 @@
         }
 
         if (musicBtn) {
-          musicBtn.addEventListener("click", () => toggleSetting("music"));
+          musicBtn.addEventListener("click", () => {
+            const backgroundMusic = document.getElementById("backgroundMusic");
+            if (window.settings) {
+              window.settings.musicEnabled = !window.settings.musicEnabled;
+              musicBtn.textContent = window.settings.musicEnabled
+                ? "ON"
+                : "OFF";
+              musicBtn.classList.toggle("off", !window.settings.musicEnabled);
+
+              // Control background music playback
+              if (window.settings.musicEnabled) {
+                backgroundMusic.volume = 0.3; // Set volume to 30%
+                // Ensure music is loaded before playing
+                if (backgroundMusic.readyState >= 2) {
+                  backgroundMusic.currentTime = 0;
+                  backgroundMusic.play().catch(console.log);
+                } else {
+                  backgroundMusic.addEventListener(
+                    "canplaythrough",
+                    () => {
+                      backgroundMusic.currentTime = 0;
+                      backgroundMusic.play().catch(console.log);
+                    },
+                    { once: true }
+                  );
+                  backgroundMusic.load();
+                }
+              } else {
+                backgroundMusic.pause();
+              }
+            }
+          });
         }
 
         // Difficulty selector

@@ -144,6 +144,139 @@ function playSound(frequency, waveType = "sine", volume = 0.1, duration = 0.2) {
   }
 }
 
+// Background Music System
+let backgroundMusic = null;
+let musicInitialized = false;
+let musicPreloaded = false;
+
+function initBackgroundMusic() {
+  console.log("initBackgroundMusic called");
+  if (!musicInitialized) {
+    backgroundMusic = document.getElementById("backgroundMusic");
+    console.log("backgroundMusic element:", backgroundMusic);
+
+    if (backgroundMusic) {
+      backgroundMusic.volume = 0.3; // Set volume to 30%
+      backgroundMusic.loop = true;
+
+      // Preload the music completely
+      backgroundMusic.addEventListener("loadstart", () => {
+        console.log("Background music loading started");
+      });
+
+      backgroundMusic.addEventListener("loadeddata", () => {
+        console.log("Background music data loaded");
+        musicPreloaded = true;
+      });
+
+      // Handle music loading and error events
+      backgroundMusic.addEventListener("canplaythrough", () => {
+        console.log("Background music ready to play");
+        musicPreloaded = true;
+        // Auto-start music if enabled and we're in menu
+        if (settings.musicEnabled && gameState === "menu") {
+          console.log("Auto-starting music for menu state");
+          startBackgroundMusic();
+        }
+      });
+
+      backgroundMusic.addEventListener("error", (e) => {
+        console.log("Background music error:", e);
+        console.log("Error details:", e.target.error);
+      });
+
+      // Handle audio interruptions and resume
+      backgroundMusic.addEventListener("pause", () => {
+        console.log("Background music paused");
+        if (settings.musicEnabled && gameState !== "paused") {
+          setTimeout(() => {
+            if (settings.musicEnabled) {
+              console.log("Auto-resuming background music");
+              backgroundMusic.play().catch(console.log);
+            }
+          }, 100);
+        }
+      });
+
+      // Test if file exists
+      backgroundMusic.addEventListener("loadedmetadata", () => {
+        console.log(
+          "Music file loaded successfully, duration:",
+          backgroundMusic.duration
+        );
+      });
+
+      // Preload the music immediately
+      console.log("Starting music load...");
+      backgroundMusic.load();
+      musicInitialized = true;
+    } else {
+      console.log("backgroundMusic element not found!");
+    }
+  }
+}
+
+function startBackgroundMusic() {
+  console.log("startBackgroundMusic called");
+  console.log("backgroundMusic:", backgroundMusic);
+  console.log("settings.musicEnabled:", settings.musicEnabled);
+
+  if (!backgroundMusic || !settings.musicEnabled) {
+    console.log("Exiting: backgroundMusic or musicEnabled is false");
+    return;
+  }
+
+  try {
+    console.log("Music readyState:", backgroundMusic.readyState);
+    console.log("Music preloaded:", musicPreloaded);
+
+    // Force play regardless of preload status for user interaction
+    backgroundMusic.volume = 0.3;
+    backgroundMusic.currentTime = 0;
+
+    const playPromise = backgroundMusic.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          console.log("Background music started successfully!");
+        })
+        .catch((error) => {
+          console.log("Could not play background music:", error);
+          // Retry after a short delay
+          setTimeout(() => {
+            if (settings.musicEnabled) {
+              console.log("Retrying music playback...");
+              backgroundMusic.play().catch((retryError) => {
+                console.log("Retry failed:", retryError);
+              });
+            }
+          }, 500);
+        });
+    }
+  } catch (error) {
+    console.log("Background music start error:", error);
+  }
+}
+
+function stopBackgroundMusic() {
+  if (backgroundMusic) {
+    backgroundMusic.pause();
+    backgroundMusic.currentTime = 0;
+  }
+}
+
+function pauseBackgroundMusic() {
+  if (backgroundMusic) {
+    backgroundMusic.pause();
+  }
+}
+
+function resumeBackgroundMusic() {
+  if (backgroundMusic && settings.musicEnabled) {
+    backgroundMusic.play().catch(console.log);
+  }
+}
+
 // UI Elements
 const scoreElement = document.getElementById("score");
 const livesElement = document.getElementById("lives");
@@ -1060,6 +1193,25 @@ function gameLoop() {
     stars.forEach((star) => star.update());
   }
 
+  // Handle different game states
+  if (gameState === "paused") {
+    // Draw pause screen overlay
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "48px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("PAUSED", canvas.width / 2, canvas.height / 2);
+
+    ctx.font = "24px Arial";
+    ctx.fillText(
+      "Press ESC or P to resume",
+      canvas.width / 2,
+      canvas.height / 2 + 50
+    );
+  }
+
   // Only update game logic when playing
   if (gameState === "playing" && player) {
     // Update particles first (behind everything)
@@ -1365,11 +1517,15 @@ window.addEventListener("keydown", (e) => {
     }
   }
 
-  if (e.key === "Escape") {
+  if (e.key === "Escape" || e.key === "p" || e.key === "P") {
     if (gameState === "playing") {
       gameState = "paused";
+      document.getElementById("pauseMenu").classList.remove("hidden");
+      pauseBackgroundMusic();
     } else if (gameState === "paused") {
       gameState = "playing";
+      document.getElementById("pauseMenu").classList.add("hidden");
+      resumeBackgroundMusic();
     }
   }
 });
@@ -1382,6 +1538,7 @@ window.addEventListener("keyup", (e) => {
 function resumeGame() {
   if (gameState === "paused") {
     gameState = "playing";
+    resumeBackgroundMusic();
   }
 }
 
@@ -1389,6 +1546,7 @@ function resumeGame() {
 function pauseGame() {
   if (gameState === "playing") {
     gameState = "paused";
+    pauseBackgroundMusic();
   }
 }
 
@@ -1398,11 +1556,22 @@ window.pauseGame = pauseGame;
 
 // Menu event listeners
 document.getElementById("startBtn").addEventListener("click", () => {
+  console.log("Start button clicked!");
   gameState = "playing";
   startMenu.classList.add("hidden");
 
   // Initialize audio with user interaction
   initAudio();
+
+  // Initialize and start background music with force
+  initBackgroundMusic();
+  console.log(
+    "About to start background music, settings.musicEnabled:",
+    settings.musicEnabled
+  );
+  if (settings.musicEnabled) {
+    startBackgroundMusic();
+  }
 
   // Initialize full game
   initGame();
@@ -1412,13 +1581,85 @@ document.getElementById("startBtn").addEventListener("click", () => {
 
 // Quick Play button
 document.getElementById("quickPlayBtn").addEventListener("click", () => {
+  console.log("Quick Play button clicked!");
   gameState = "playing";
   startMenu.classList.add("hidden");
 
   initAudio();
+
+  // Initialize and start background music with force
+  initBackgroundMusic();
+  console.log(
+    "About to start background music (Quick Play), settings.musicEnabled:",
+    settings.musicEnabled
+  );
+  if (settings.musicEnabled) {
+    startBackgroundMusic();
+  }
+
   initGame();
   updateUI();
 });
+
+// Restart button
+document.getElementById("restartBtn").addEventListener("click", () => {
+  console.log("Restart button clicked!");
+  document.getElementById("gameOverMenu").classList.add("hidden");
+  startGame();
+});
+
+// Main menu from game over
+document
+  .getElementById("mainMenuFromGameOverBtn")
+  .addEventListener("click", () => {
+    console.log("Main menu from game over clicked!");
+    document.getElementById("gameOverMenu").classList.add("hidden");
+    document.getElementById("startMenu").classList.remove("hidden");
+    gameState = "menu";
+
+    // Start menu music
+    if (settings.musicEnabled) {
+      initBackgroundMusic();
+      startBackgroundMusic();
+    }
+  });
+
+// Resume button
+document.getElementById("resumeBtn").addEventListener("click", () => {
+  console.log("Resume button clicked!");
+  document.getElementById("pauseMenu").classList.add("hidden");
+  gameState = "playing";
+  resumeBackgroundMusic();
+});
+
+// Main menu from pause
+document.getElementById("mainMenuBtn").addEventListener("click", () => {
+  console.log("Main menu from pause clicked!");
+  document.getElementById("pauseMenu").classList.add("hidden");
+  document.getElementById("startMenu").classList.remove("hidden");
+  gameState = "menu";
+  stopBackgroundMusic();
+
+  // Start menu music
+  if (settings.musicEnabled) {
+    setTimeout(() => {
+      initBackgroundMusic();
+      startBackgroundMusic();
+    }, 100);
+  }
+});
+
+// Next level button
+const nextLevelBtn = document.getElementById("nextLevelBtn");
+if (nextLevelBtn) {
+  nextLevelBtn.addEventListener("click", () => {
+    console.log("Next level button clicked!");
+    document.getElementById("winMenu").classList.add("hidden");
+    gameState = "playing";
+    createInvaders();
+    updateUI();
+  });
+}
 
 // Navigation system
 document.querySelectorAll(".nav-item").forEach((item) => {
@@ -1452,8 +1693,17 @@ document.getElementById("soundToggle").addEventListener("click", (e) => {
 
 document.getElementById("musicToggle").addEventListener("click", (e) => {
   musicEnabled = !musicEnabled;
+  settings.musicEnabled = musicEnabled; // Update settings object
   e.target.textContent = musicEnabled ? "ON" : "OFF";
   e.target.classList.toggle("off", !musicEnabled);
+
+  // Control background music
+  if (musicEnabled && gameState === "playing") {
+    initBackgroundMusic();
+    startBackgroundMusic();
+  } else {
+    stopBackgroundMusic();
+  }
 });
 
 // Mouse controls
@@ -1540,16 +1790,23 @@ function startGame() {
   // Initialize game objects
   initGame();
 
-  // Hide menu
-  const gameMenuElement = document.getElementById("startMenu");
-  if (gameMenuElement) {
-    gameMenuElement.style.display = "none";
-  }
-  document.getElementById("gameCanvas").style.display = "block";
+  // Hide all menus and show canvas
+  document.getElementById("startMenu").classList.add("hidden");
+  document.getElementById("gameOverMenu").classList.add("hidden");
+  document.getElementById("winMenu").classList.add("hidden");
+  document.getElementById("pauseMenu").classList.add("hidden");
 
   // Initialize audio
   initAudio();
 
+  // Initialize and start background music with force
+  initBackgroundMusic();
+  if (settings.musicEnabled) {
+    console.log("Attempting to start background music...");
+    startBackgroundMusic();
+  }
+
+  updateUI();
   console.log("Game started with", invaders.length, "invaders");
 }
 
@@ -1558,22 +1815,12 @@ function gameOver() {
   gameState = "gameOver";
   updateHighScore();
 
-  // Show game over screen after delay
-  setTimeout(() => {
-    const restart = confirm(
-      `Game Over!\nScore: ${score}\nLevel: ${level}\nHigh Score: ${highScore}\n\nPlay again?`
-    );
-    if (restart) {
-      startGame();
-    } else {
-      gameState = "menu";
-      const gameMenuElement = document.getElementById("startMenu");
-      if (gameMenuElement) {
-        gameMenuElement.style.display = "block";
-      }
-      document.getElementById("gameCanvas").style.display = "none";
-    }
-  }, 500);
+  // Stop background music
+  stopBackgroundMusic();
+
+  // Show game over screen
+  document.getElementById("gameOverMenu").classList.remove("hidden");
+  document.getElementById("finalScore").textContent = `Final Score: ${score}`;
 }
 
 // Update high score
@@ -1586,6 +1833,43 @@ function updateHighScore() {
 
 // Make startGame globally accessible
 window.startGame = startGame;
+
+// Initialize background music on page load
+document.addEventListener("DOMContentLoaded", () => {
+  // Initialize music system immediately
+  console.log("DOM Content Loaded, initializing music...");
+
+  // Set initial game state to menu
+  gameState = "menu";
+
+  // Show main menu, hide other menus
+  document.getElementById("startMenu").classList.remove("hidden");
+  document.getElementById("gameOverMenu").classList.add("hidden");
+  document.getElementById("winMenu").classList.add("hidden");
+  document.getElementById("pauseMenu").classList.add("hidden");
+
+  // Initialize stars and UI
+  createStars();
+  updateUI();
+
+  initBackgroundMusic();
+
+  // Ensure settings are ready
+  console.log("Settings on DOM load:", settings);
+
+  // Start music after a short delay to ensure everything is loaded
+  setTimeout(() => {
+    console.log(
+      "Delayed music start, gameState:",
+      gameState,
+      "musicEnabled:",
+      settings.musicEnabled
+    );
+    if (settings.musicEnabled && gameState === "menu") {
+      startBackgroundMusic();
+    }
+  }, 1000);
+});
 
 // Start game loop immediately for menu rendering
 gameLoop();
