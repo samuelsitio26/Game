@@ -4,7 +4,7 @@ const ctx = canvas.getContext("2d");
 // Game state
 let gameState = "menu"; // 'menu', 'playing', 'gameOver', 'win'
 let score = 0;
-let lives = 3;
+let lives = 100000000000000;
 let level = 1;
 let gameSpeed = 1;
 
@@ -1773,7 +1773,7 @@ function startGame() {
 
   // Reset game state
   score = 0;
-  lives = 3;
+  lives = 100000000000000;
   level = 1;
   combo = 0;
   weaponType = "normal";
