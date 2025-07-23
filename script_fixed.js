@@ -148,6 +148,7 @@ function playSound(frequency, waveType = "sine", volume = 0.1, duration = 0.2) {
 let backgroundMusic = null;
 let musicInitialized = false;
 let musicPreloaded = false;
+let musicAllowed = false; // Flag to control when music is actually allowed to play
 
 function initBackgroundMusic() {
   console.log("initBackgroundMusic called");
@@ -173,11 +174,7 @@ function initBackgroundMusic() {
       backgroundMusic.addEventListener("canplaythrough", () => {
         console.log("Background music ready to play");
         musicPreloaded = true;
-        // Auto-start music if enabled and we're in menu
-        if (settings.musicEnabled && gameState === "menu") {
-          console.log("Auto-starting music for menu state");
-          startBackgroundMusic();
-        }
+        // Remove auto-start to prevent unwanted music playback
       });
 
       backgroundMusic.addEventListener("error", (e) => {
@@ -185,18 +182,8 @@ function initBackgroundMusic() {
         console.log("Error details:", e.target.error);
       });
 
-      // Handle audio interruptions and resume
-      backgroundMusic.addEventListener("pause", () => {
-        console.log("Background music paused");
-        if (settings.musicEnabled && gameState !== "paused") {
-          setTimeout(() => {
-            if (settings.musicEnabled) {
-              console.log("Auto-resuming background music");
-              backgroundMusic.play().catch(console.log);
-            }
-          }, 100);
-        }
-      });
+      // Remove aggressive auto-resume that causes audio leaks
+      // backgroundMusic.addEventListener("pause", () => { ... });
 
       // Test if file exists
       backgroundMusic.addEventListener("loadedmetadata", () => {
@@ -220,19 +207,19 @@ function startBackgroundMusic() {
   console.log("startBackgroundMusic called");
   console.log("backgroundMusic:", backgroundMusic);
   console.log("settings.musicEnabled:", settings.musicEnabled);
+  console.log("musicAllowed:", musicAllowed);
 
-  if (!backgroundMusic || !settings.musicEnabled) {
-    console.log("Exiting: backgroundMusic or musicEnabled is false");
+  // Strict control: only play if explicitly allowed and enabled
+  if (!backgroundMusic || !settings.musicEnabled || !musicAllowed) {
+    console.log("Exiting: conditions not met for music playback");
     return;
   }
 
   try {
-    console.log("Music readyState:", backgroundMusic.readyState);
-    console.log("Music preloaded:", musicPreloaded);
-
-    // Force play regardless of preload status for user interaction
-    backgroundMusic.volume = 0.3;
+    // Stop any existing playback first
+    backgroundMusic.pause();
     backgroundMusic.currentTime = 0;
+    backgroundMusic.volume = 0.3;
 
     const playPromise = backgroundMusic.play();
     if (playPromise !== undefined) {
@@ -242,15 +229,7 @@ function startBackgroundMusic() {
         })
         .catch((error) => {
           console.log("Could not play background music:", error);
-          // Retry after a short delay
-          setTimeout(() => {
-            if (settings.musicEnabled) {
-              console.log("Retrying music playback...");
-              backgroundMusic.play().catch((retryError) => {
-                console.log("Retry failed:", retryError);
-              });
-            }
-          }, 500);
+          // NO automatic retry to prevent audio leaks
         });
     }
   } catch (error) {
@@ -263,6 +242,7 @@ function stopBackgroundMusic() {
     backgroundMusic.pause();
     backgroundMusic.currentTime = 0;
   }
+  musicAllowed = false; // Disable music playback
 }
 
 function pauseBackgroundMusic() {
@@ -1253,7 +1233,12 @@ function gameLoop() {
             gameState = "gameOver";
             updateHighScore();
             playSound(200, "sawtooth", 0.5, 2);
-            setTimeout(gameOver, 100);
+            setTimeout(() => {
+              gameOver();
+              document
+                .getElementById("gameOverMenu")
+                .classList.remove("hidden");
+            }, 100);
             return;
           }
         }
@@ -1337,7 +1322,10 @@ function gameLoop() {
           gameState = "gameOver";
           updateHighScore();
           playSound(200, "sawtooth", 0.5, 2);
-          setTimeout(gameOver, 100);
+          setTimeout(() => {
+            gameOver();
+            document.getElementById("gameOverMenu").classList.remove("hidden");
+          }, 100);
           return;
         }
       }
@@ -1456,7 +1444,10 @@ function gameLoop() {
           gameState = "gameOver";
           updateHighScore();
           playSound(200, "sawtooth", 0.5, 2);
-          setTimeout(gameOver, 100);
+          setTimeout(() => {
+            gameOver();
+            document.getElementById("gameOverMenu").classList.remove("hidden");
+          }, 100);
           return;
         }
       }
@@ -1538,6 +1529,7 @@ window.addEventListener("keyup", (e) => {
 function resumeGame() {
   if (gameState === "paused") {
     gameState = "playing";
+    pausedForNavigation = false; // Reset navigation pause flag
     resumeBackgroundMusic();
   }
 }
@@ -1546,6 +1538,7 @@ function resumeGame() {
 function pauseGame() {
   if (gameState === "playing") {
     gameState = "paused";
+    // Don't set pausedForNavigation here - this is for manual pause (ESC key)
     pauseBackgroundMusic();
   }
 }
@@ -1558,6 +1551,7 @@ window.pauseGame = pauseGame;
 document.getElementById("startBtn").addEventListener("click", () => {
   console.log("Start button clicked!");
   gameState = "playing";
+  pausedForNavigation = false; // Reset navigation pause flag
   startMenu.classList.add("hidden");
 
   // Initialize audio with user interaction
@@ -1565,6 +1559,7 @@ document.getElementById("startBtn").addEventListener("click", () => {
 
   // Initialize and start background music with force
   initBackgroundMusic();
+  musicAllowed = true; // Allow music only when user starts game
   console.log(
     "About to start background music, settings.musicEnabled:",
     settings.musicEnabled
@@ -1583,12 +1578,14 @@ document.getElementById("startBtn").addEventListener("click", () => {
 document.getElementById("quickPlayBtn").addEventListener("click", () => {
   console.log("Quick Play button clicked!");
   gameState = "playing";
+  pausedForNavigation = false; // Reset navigation pause flag
   startMenu.classList.add("hidden");
 
   initAudio();
 
   // Initialize and start background music with force
   initBackgroundMusic();
+  musicAllowed = true; // Allow music only when user starts game
   console.log(
     "About to start background music (Quick Play), settings.musicEnabled:",
     settings.musicEnabled
@@ -1604,8 +1601,60 @@ document.getElementById("quickPlayBtn").addEventListener("click", () => {
 // Restart button
 document.getElementById("restartBtn").addEventListener("click", () => {
   console.log("Restart button clicked!");
+  // Hide game over menu
   document.getElementById("gameOverMenu").classList.add("hidden");
-  startGame();
+
+  // Reset all game state variables
+  gameState = "playing";
+  pausedForNavigation = false; // Reset navigation pause flag
+  score = 0;
+  lives = 100000000000000;
+  level = 1;
+  combo = 0;
+  weaponType = "normal";
+  weaponTimer = 0;
+  invincibilityTimer = 0;
+  maxCombo = 0;
+
+  // Clear all arrays
+  bullets = [];
+  enemyBullets = [];
+  invaders = [];
+  powerUps = [];
+  particles = [];
+  shields = [];
+  stars = [];
+  boss = null;
+  currentBoss = null;
+
+  // Reset keys and mouse
+  keys = {};
+  mouseX = 0;
+
+  // Hide all menus except canvas
+  document.getElementById("startMenu").classList.add("hidden");
+  document.getElementById("winMenu").classList.add("hidden");
+  document.getElementById("pauseMenu").classList.add("hidden");
+
+  // Re-initialize game objects and UI
+  initGame();
+  updateUI();
+
+  // Re-initialize audio
+  initAudio();
+  initBackgroundMusic();
+  musicAllowed = true; // Allow music for restart
+  if (settings.musicEnabled) {
+    startBackgroundMusic();
+  }
+
+  // Re-create stars for background
+  createStars();
+
+  // Ensure game loop continues
+  if (typeof gameLoop === "function") {
+    requestAnimationFrame(gameLoop);
+  }
 });
 
 // Main menu from game over
@@ -1629,6 +1678,7 @@ document.getElementById("resumeBtn").addEventListener("click", () => {
   console.log("Resume button clicked!");
   document.getElementById("pauseMenu").classList.add("hidden");
   gameState = "playing";
+  pausedForNavigation = false; // Reset navigation pause flag
   resumeBackgroundMusic();
 });
 
@@ -1638,6 +1688,7 @@ document.getElementById("mainMenuBtn").addEventListener("click", () => {
   document.getElementById("pauseMenu").classList.add("hidden");
   document.getElementById("startMenu").classList.remove("hidden");
   gameState = "menu";
+  pausedForNavigation = false; // Reset navigation pause flag
   stopBackgroundMusic();
 
   // Start menu music
@@ -1661,6 +1712,9 @@ if (nextLevelBtn) {
   });
 }
 
+// Variable to track if game was paused for navigation
+let pausedForNavigation = false;
+
 // Navigation system
 document.querySelectorAll(".nav-item").forEach((item) => {
   item.addEventListener("click", () => {
@@ -1671,16 +1725,64 @@ document.querySelectorAll(".nav-item").forEach((item) => {
     // Add active class to clicked item
     item.classList.add("active");
 
-    // Hide all menu contents
-    document
-      .querySelectorAll(".menu-content")
-      .forEach((content) => content.classList.add("hidden"));
-
-    // Show selected menu content
     const menuType = item.dataset.menu;
-    const contentId =
-      menuType === "main" ? "mainContent" : `${menuType}Content`;
-    document.getElementById(contentId).classList.remove("hidden");
+
+    // Handle different menu types
+    if (menuType !== "main") {
+      // Going to Settings/Controls/About from any state
+
+      // Show the startMenu container for settings/controls/about
+      document.getElementById("startMenu").classList.remove("hidden");
+
+      // Hide all menu contents
+      document
+        .querySelectorAll(".menu-content")
+        .forEach((content) => content.classList.add("hidden"));
+
+      // Show only the selected menu content
+      const contentId = `${menuType}Content`;
+      document.getElementById(contentId).classList.remove("hidden");
+
+      // Hide main menu content and pause overlay
+      document.getElementById("mainContent").classList.add("hidden");
+      document.getElementById("pauseMenu").classList.add("hidden");
+
+      // Pause game if currently playing
+      if (gameState === "playing") {
+        gameState = "paused";
+        pausedForNavigation = true; // Mark that we paused for navigation
+        pauseBackgroundMusic();
+      }
+    } else {
+      // Returning to Main menu
+
+      if (pausedForNavigation && gameState === "paused") {
+        // Resume game that was paused for navigation
+        gameState = "playing";
+        pausedForNavigation = false;
+
+        // Hide all menus and resume game
+        document.getElementById("startMenu").classList.add("hidden");
+        document.getElementById("pauseMenu").classList.add("hidden");
+        document
+          .querySelectorAll(".menu-content")
+          .forEach((content) => content.classList.add("hidden"));
+
+        resumeBackgroundMusic();
+      } else {
+        // Show main menu (when truly in menu state)
+        document.getElementById("startMenu").classList.remove("hidden");
+
+        // Hide all menu contents first
+        document
+          .querySelectorAll(".menu-content")
+          .forEach((content) => content.classList.add("hidden"));
+
+        // Show main content
+        document.getElementById("mainContent").classList.remove("hidden");
+        document.getElementById("pauseMenu").classList.add("hidden");
+      }
+    }
   });
 });
 
