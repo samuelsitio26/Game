@@ -1,5 +1,11 @@
 # 🚀 Space Invaders Game
 
+## 🎮 Live Demo
+
+**[Play the Game Now!](https://samuelsitio26.github.io/Game/)**
+
+Experience the classic Space Invaders gameplay directly in your browser - no downloads required!
+
 ## Overview
 
 A classic Space Invaders game built with HTML5, CSS3, and JavaScript. Defend Earth from alien invasion in this retro-style arcade game!
