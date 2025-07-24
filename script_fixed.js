@@ -2,11 +2,29 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 // Game state
-let gameState = "menu"; // 'menu', 'playing', 'gameOver', 'win'
+let gameState = "menu"; // 'menu', 'playing', 'gameOver', 'win', 'mission', 'quickplay'
+let gameMode = "normal"; // 'normal', 'mission', 'quickplay'
 let score = 0;
-let lives = 100000000000000;
+let lives = PLAYER_CONFIG?.startingLives || 3; // Menggunakan konfigurasi dari config.js
 let level = 1;
 let gameSpeed = 1;
+
+// Mission Mode Variables
+let currentMission = 1;
+let missionProgress = 0;
+let missionTimer = 0;
+let missionStartTime = 0;
+let missionCompleted = false;
+let completedMissions = JSON.parse(
+  localStorage.getItem("completedMissions") || "[]"
+);
+
+// Quick Play Mode Variables
+let quickPlayTimer = 0;
+let quickPlayHighScore = localStorage.getItem("quickPlayHighScore") || 0;
+let alienWaveTimer = 0;
+let quickPlayAliens = [];
+let quickPlayDifficulty = 1;
 
 // Game objects
 let player;
@@ -27,64 +45,44 @@ let maxCombo = 0;
 let weaponType = "normal"; // 'normal', 'double', 'laser', 'spread'
 let weaponTimer = 0;
 let highScore = localStorage.getItem("spaceInvadersHighScore") || 0;
-let soundEnabled = true;
-let musicEnabled = true;
 let invincibilityTimer = 0; // Player invincibility after getting hit
 
 // Audio Context
 let audioContext = null;
 
-// Settings object - HARUS DIINISIALISASI DI ATAS
-let settings = {
-  soundEnabled: true,
-  musicEnabled: true,
-  difficulty: "normal",
-  graphics: "high",
-  controlMode: "mouse", // 'mouse', 'keyboard', 'both'
-  godMode: false,
-  mouseActive: true, // New mouse control toggle
-};
+// Settings object - Menggunakan DEFAULT_SETTINGS dari config.js
+let settings = DEFAULT_SETTINGS
+  ? { ...DEFAULT_SETTINGS }
+  : {
+      soundEnabled: true,
+      musicEnabled: true,
+      difficulty: "normal",
+      graphics: "high",
+      controlMode: "mouse",
+      godMode: false,
+      mouseActive: true,
+    };
 
 // Make settings globally accessible
 window.settings = settings;
 
-// Game settings
-const playerWidth = 50;
-const playerHeight = 30;
-const playerSpeed = 7;
-
-const bulletWidth = 5;
-const bulletHeight = 15;
-const bulletSpeed = 10;
-
-const invaderWidth = 40;
-const invaderHeight = 30;
-let invaderSpeed = 1;
-let invaderDirection = 1;
-let invaderShootChance = 0.001;
-const invaderRows = 5;
-const invaderCols = 10;
-const invaderGap = 10;
-const powerUpDuration = 600;
+// Canvas dimensions - Menggunakan CANVAS_CONFIG dari config.js
+if (CANVAS_CONFIG) {
+  canvas.width = CANVAS_CONFIG.width;
+  canvas.height = CANVAS_CONFIG.height;
+} else {
+  canvas.width = 800;
+  canvas.height = 600;
+}
 
 // Boss system
 let currentBoss = null;
 let bossLevel = 0; // 0=no boss, 1=small, 2=medium, 3=large, 4=huge
-let maxLevel = 5;
 
-// Canvas dimensions
-canvas.width = 800;
-canvas.height = 600;
-
-// Boss settings
-const bossWidth = 120;
-const bossHeight = 80;
-const bossSpeed = 2;
-
-// Shield settings
-const shieldWidth = 80;
-const shieldHeight = 60;
-const shieldsCount = 4;
+// Variabel dinamis yang menggunakan konfigurasi
+let invaderSpeed = 1;
+let invaderDirection = 1;
+let invaderShootChance = 0.001;
 
 // Initialize Web Audio API
 function initAudio() {
@@ -99,19 +97,48 @@ function initAudio() {
 }
 
 // Enhanced Audio System
-function playSound(frequency, waveType = "sine", volume = 0.1, duration = 0.2) {
+function playSound(soundType = "shoot", customVolume = null) {
   if (!settings.soundEnabled || !audioContext) return;
 
   try {
+    // Gunakan konfigurasi audio dari config.js
+    const audioConfig = AUDIO_CONFIG?.soundTypes?.[soundType] ||
+      AUDIO_CONFIG?.soundTypes?.shoot || {
+        frequency: 440,
+        type: "sine",
+        duration: 0.2,
+      };
+
+    const frequency = audioConfig.frequency;
+    const waveType = audioConfig.type;
+    const duration = audioConfig.duration;
+    const volume = customVolume || AUDIO_CONFIG?.soundEffectsVolume || 0.1;
+
     // Validate all parameters
-    if (!frequency || typeof frequency !== "number" || !isFinite(frequency)) {
-      frequency = 440; // Default frequency
+    let validFrequency = frequency;
+    let validVolume = volume;
+    let validDuration = duration;
+
+    if (
+      !validFrequency ||
+      typeof validFrequency !== "number" ||
+      !isFinite(validFrequency)
+    ) {
+      validFrequency = 440; // Default frequency
     }
-    if (!volume || typeof volume !== "number" || !isFinite(volume)) {
-      volume = 0.1; // Default volume
+    if (
+      !validVolume ||
+      typeof validVolume !== "number" ||
+      !isFinite(validVolume)
+    ) {
+      validVolume = 0.1; // Default volume
     }
-    if (!duration || typeof duration !== "number" || !isFinite(duration)) {
-      duration = 0.2; // Default duration
+    if (
+      !validDuration ||
+      typeof validDuration !== "number" ||
+      !isFinite(validDuration)
+    ) {
+      validDuration = 0.2; // Default duration
     }
 
     const oscillator = audioContext.createOscillator();
@@ -121,9 +148,11 @@ function playSound(frequency, waveType = "sine", volume = 0.1, duration = 0.2) {
     gainNode.connect(audioContext.destination);
 
     // Validate and clamp parameters
-    const safeVolume = Math.max(0.001, Math.min(1, volume));
-    const safeDuration = Math.max(0.01, Math.min(5, duration));
-    const safeFrequency = Math.max(20, Math.min(20000, frequency));
+    const safeVolume =
+      Math.max(0.001, Math.min(1, validVolume)) *
+      (AUDIO_CONFIG?.masterVolume || 0.3);
+    const safeDuration = Math.max(0.01, Math.min(5, validDuration));
+    const safeFrequency = Math.max(20, Math.min(20000, validFrequency));
 
     oscillator.frequency.setValueAtTime(
       safeFrequency,
@@ -157,7 +186,8 @@ function initBackgroundMusic() {
     console.log("backgroundMusic element:", backgroundMusic);
 
     if (backgroundMusic) {
-      backgroundMusic.volume = 0.3; // Set volume to 30%
+      // Menggunakan volume dari konfigurasi
+      backgroundMusic.volume = AUDIO_CONFIG?.musicVolume || 0.3;
       backgroundMusic.loop = true;
 
       // Preload the music completely
@@ -267,12 +297,14 @@ const winMenu = document.getElementById("winMenu");
 
 // Player class
 class Player {
-  constructor(x, y, width, height, color) {
+  constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.width = width;
-    this.height = height;
-    this.color = color;
+    // Menggunakan konfigurasi dari config.js
+    this.width = PLAYER_CONFIG?.width || 50;
+    this.height = PLAYER_CONFIG?.height || 30;
+    this.speed = PLAYER_CONFIG?.speed || 7;
+    this.color = EFFECTS_CONFIG?.colors?.player || "#00ff41";
     this.shootCooldown = 0;
   }
 
@@ -289,17 +321,23 @@ class Player {
     const centerX = this.x + this.width / 2;
     const centerY = this.y + this.height / 2;
 
-    // Main body gradient
+    // Main body gradient - menggunakan konfigurasi warna
     const bodyGradient = ctx.createLinearGradient(
       this.x,
       this.y,
       this.x,
       this.y + this.height
     );
-    bodyGradient.addColorStop(0, "#00ff41");
-    bodyGradient.addColorStop(0.3, "#00cc33");
-    bodyGradient.addColorStop(0.7, "#008822");
-    bodyGradient.addColorStop(1, "#004411");
+    const gradientColors = EFFECTS_CONFIG?.colors?.playerGradient || [
+      "#00ff41",
+      "#00cc33",
+      "#008822",
+      "#004411",
+    ];
+
+    gradientColors.forEach((color, index) => {
+      bodyGradient.addColorStop(index / (gradientColors.length - 1), color);
+    });
 
     // Draw main hull
     ctx.fillStyle = bodyGradient;
@@ -394,6 +432,10 @@ class Player {
 
   shoot() {
     if (this.shootCooldown === 0) {
+      const bulletWidth = BULLET_CONFIG?.width || 5;
+      const bulletHeight = BULLET_CONFIG?.height || 15;
+      const bulletSpeed = BULLET_CONFIG?.speed || 10;
+
       const bulletX = this.x + this.width / 2 - bulletWidth / 2;
       const bulletY = this.y;
 
@@ -405,11 +447,11 @@ class Player {
               bulletY,
               bulletWidth,
               bulletHeight,
-              "#ff4444",
+              BULLET_CONFIG?.color || "#ff4444",
               bulletSpeed
             )
           );
-          playSound(800, "square", 0.2, 0.1);
+          playSound("shoot");
           break;
         case "double":
           bullets.push(
@@ -418,7 +460,7 @@ class Player {
               bulletY,
               bulletWidth,
               bulletHeight,
-              "#ff4444",
+              BULLET_CONFIG?.color || "#ff4444",
               bulletSpeed
             )
           );
@@ -428,11 +470,11 @@ class Player {
               bulletY,
               bulletWidth,
               bulletHeight,
-              "#ff4444",
+              BULLET_CONFIG?.color || "#ff4444",
               bulletSpeed
             )
           );
-          playSound(900, "square", 0.3, 0.1);
+          playSound("shoot");
           break;
         case "laser":
           bullets.push(
@@ -445,7 +487,7 @@ class Player {
               bulletSpeed * 1.5
             )
           );
-          playSound(1200, "sine", 0.4, 0.2);
+          playSound("powerup");
           break;
         case "spread":
           for (let i = -2; i <= 2; i++) {
@@ -462,7 +504,7 @@ class Player {
               )
             );
           }
-          playSound(700, "sawtooth", 0.3, 0.15);
+          playSound("shoot");
           break;
       }
 
@@ -650,6 +692,9 @@ class Invader {
 
   shoot() {
     if (Math.random() < invaderShootChance) {
+      const bulletWidth = BULLET_CONFIG?.width || 5;
+      const bulletHeight = BULLET_CONFIG?.height || 15;
+
       enemyBullets.push(
         new EnemyBullet(
           this.x + this.width / 2 - bulletWidth / 2,
@@ -861,7 +906,7 @@ class Boss {
         this.y + this.height / 2,
         this.color
       );
-      playSound(300, "sawtooth", 0.5, 1);
+      playSound("explosion");
       return true;
     }
     return false;
@@ -882,10 +927,12 @@ class EnemyBullet extends Bullet {
 
 // Initialize complete game
 function initGame() {
-  // Initialize player
+  // Initialize player - menggunakan konfigurasi dari config.js
+  const playerWidth = PLAYER_CONFIG?.width || 50;
+  const playerHeight = PLAYER_CONFIG?.height || 30;
   const playerX = (canvas.width - playerWidth) / 2;
   const playerY = canvas.height - playerHeight - 20;
-  player = new Player(playerX, playerY, playerWidth, playerHeight, "lime");
+  player = new Player(playerX, playerY); // Constructor sudah dimodifikasi
 
   // Reset game arrays
   bullets = [];
@@ -903,6 +950,9 @@ function initGame() {
   // Create invaders
   createInvaders();
 
+  // Create stars background
+  createStars();
+
   console.log("Game initialized with", invaders.length, "invaders");
 }
 
@@ -911,10 +961,23 @@ function createInvaders() {
   invaders = [];
   currentBoss = null;
 
+  // Menggunakan konfigurasi dari config.js
+  const invaderWidth = INVADER_CONFIG?.width || 40;
+  const invaderHeight = INVADER_CONFIG?.height || 30;
+  const invaderGap = INVADER_CONFIG?.gap || 10;
+  const levelConfig = getLevelConfig ? getLevelConfig(level) : null;
+
+  // Update speed and shoot chance berdasarkan level
+  invaderSpeed = getEnemySpeed ? getEnemySpeed(level) : 1 + (level - 1) * 0.5;
+  invaderShootChance = getEnemyShootChance
+    ? getEnemyShootChance(level)
+    : 0.001 + (level - 1) * 0.0005;
+
   // Level system: 1-4 boss levels, 5 final alien swarm
   if (level <= 4) {
     // Boss levels 1-4
     bossLevel = level;
+    const bossWidth = BOSS_CONFIG?.width || 120;
     const bossX = (canvas.width - (80 + level * 40)) / 2;
     const bossY = 50;
     currentBoss = new Boss(bossX, bossY, bossLevel);
@@ -938,8 +1001,8 @@ function createInvaders() {
   } else if (level === 5) {
     // Final level - only aliens, no boss
     bossLevel = 0;
-    const rows = 6;
-    const cols = 12;
+    const rows = INVADER_CONFIG?.rows || 6;
+    const cols = INVADER_CONFIG?.cols || 12;
     const startX = 50;
     const startY = 50;
 
@@ -1141,7 +1204,15 @@ function createStars() {
 function updateUI() {
   scoreElement.textContent = `Score: ${score}`;
   livesElement.textContent = `Lives: ${lives}`;
-  levelElement.textContent = `Level: ${level}`;
+
+  // Handle different game modes
+  if (gameMode === "mission") {
+    updateMissionUI();
+  } else if (gameMode === "quickplay") {
+    updateQuickPlayUI();
+  } else {
+    levelElement.textContent = `Level: ${level}`;
+  }
 
   // Add combo, weapon info, and control mode to score element
   let displayText = `Score: ${score}`;
@@ -1158,11 +1229,451 @@ function updateUI() {
     controlMode === "mouse" ? "🖱️" : controlMode === "keyboard" ? "⌨️" : "🎮";
   displayText += ` | ${controlIcon} ${controlMode.toUpperCase()}`;
 
-  if (highScore > 0) {
+  if (gameMode === "quickplay") {
+    displayText += ` | Best: ${quickPlayHighScore}`;
+  } else if (highScore > 0) {
     displayText += ` | Best: ${highScore}`;
   }
 
   scoreElement.innerHTML = displayText;
+}
+
+// ====================================
+// MISSION MODE FUNCTIONS
+// ====================================
+
+// Initialize Mission Mode
+function initMissionMode() {
+  gameMode = "mission";
+  gameState = "playing";
+  missionProgress = 0;
+  missionTimer = 0;
+  missionStartTime = Date.now();
+  missionCompleted = false;
+
+  // Reset game stats
+  score = 0;
+  lives = PLAYER_CONFIG?.startingLives || 3;
+  level = 1;
+  combo = 0;
+  weaponType = "normal";
+  weaponTimer = 0;
+  invincibilityTimer = 0;
+
+  // Clear arrays
+  bullets = [];
+  enemyBullets = [];
+  invaders = [];
+  powerUps = [];
+  particles = [];
+  shields = [];
+  stars = [];
+  currentBoss = null;
+
+  // Initialize mission based on type
+  const mission = MISSION_CONFIG.missionTypes[currentMission];
+  if (mission) {
+    if (mission.type === "boss" || mission.type === "final_boss") {
+      // Create boss for boss missions
+      const bossX = (canvas.width - 120) / 2;
+      const bossY = 50;
+      currentBoss = new Boss(
+        bossX,
+        bossY,
+        currentMission === 10 ? 4 : Math.min(currentMission, 3)
+      );
+    } else {
+      // Create normal invaders for other missions
+      createInvaders();
+    }
+  }
+
+  // Initialize player and other game elements
+  initGame();
+
+  // Create stars for background effect
+  createStars();
+
+  updateMissionUI();
+}
+
+// Check Mission Completion
+function checkMissionComplete() {
+  if (gameMode !== "mission" || missionCompleted) return;
+
+  const mission = MISSION_CONFIG.missionTypes[currentMission];
+  if (!mission) return;
+
+  let isComplete = false;
+
+  switch (mission.type) {
+    case "eliminate":
+      if (missionProgress >= mission.target) isComplete = true;
+      break;
+    case "survive":
+      const surviveTime = Math.floor((Date.now() - missionStartTime) / 1000);
+      if (surviveTime >= mission.target) isComplete = true;
+      break;
+    case "score":
+      if (score >= mission.target) isComplete = true;
+      break;
+    case "combo":
+      if (combo >= mission.target) isComplete = true;
+      break;
+    case "boss":
+    case "final_boss":
+      if (currentBoss && currentBoss.health <= 0) isComplete = true;
+      break;
+  }
+
+  if (isComplete) {
+    missionCompleted = true;
+    const reward = MISSION_CONFIG.rewards[currentMission] || 1000;
+    score += reward;
+
+    // Save completion
+    if (!completedMissions.includes(currentMission)) {
+      completedMissions.push(currentMission);
+      localStorage.setItem(
+        "completedMissions",
+        JSON.stringify(completedMissions)
+      );
+    }
+
+    // Show mission complete
+    setTimeout(() => {
+      if (currentMission >= MISSION_CONFIG.maxMissions) {
+        alert(
+          `🎉 SEMUA MISI SELESAI! 🎉\nReward: ${reward} points\nTotal Score: ${score}`
+        );
+        gameState = "menu";
+      } else {
+        alert(
+          `✅ MISI ${currentMission} SELESAI!\nReward: ${reward} points\nScore: ${score}`
+        );
+        currentMission++;
+        if (currentMission <= MISSION_CONFIG.maxMissions) {
+          initMissionMode();
+        } else {
+          gameState = "menu";
+        }
+      }
+    }, 100);
+  }
+}
+
+// Update Mission UI
+function updateMissionUI() {
+  const mission = MISSION_CONFIG.missionTypes[currentMission];
+  if (!mission) return;
+
+  let progressText = "";
+
+  switch (mission.type) {
+    case "eliminate":
+      progressText = `${missionProgress}/${mission.target} alien dihancurkan`;
+      break;
+    case "survive":
+      const surviveTime = Math.floor((Date.now() - missionStartTime) / 1000);
+      progressText = `${surviveTime}/${mission.target} detik bertahan`;
+      break;
+    case "score":
+      progressText = `${score}/${mission.target} skor`;
+      break;
+    case "combo":
+      progressText = `${combo}/${mission.target} combo`;
+      break;
+    case "boss":
+    case "final_boss":
+      progressText = currentBoss
+        ? `Boss HP: ${currentBoss.health}`
+        : "Tunggu Boss...";
+      break;
+  }
+
+  levelElement.textContent = `Misi ${currentMission}: ${mission.description} | ${progressText}`;
+}
+
+// ====================================
+// QUICK PLAY MODE FUNCTIONS
+// ====================================
+
+// Quick Play Alien Class
+class QuickPlayAlien {
+  constructor(type, startX, startY) {
+    const config = QUICKPLAY_CONFIG.alienTypes[type];
+    this.type = type;
+    this.width = config.width;
+    this.height = config.height;
+    this.speed = config.speed * (quickPlayDifficulty * 0.1 + 1);
+    this.health = config.health;
+    this.maxHealth = config.health;
+    this.points = config.points;
+    this.spawnPattern = config.spawnPattern;
+
+    // Set position based on spawn pattern
+    this.x = startX;
+    this.y = startY;
+    this.targetX = this.x;
+    this.targetY = canvas.height / 2; // Target tengah layar
+
+    // Movement properties
+    this.phase = Math.random() * Math.PI * 2;
+    this.amplitude = 30;
+    this.color = this.getColorByType();
+  }
+
+  getColorByType() {
+    switch (this.type) {
+      case "small":
+        return "#00ff88";
+      case "medium":
+        return "#ffaa00";
+      case "fast":
+        return "#ff4444";
+      default:
+        return "#ffffff";
+    }
+  }
+
+  update() {
+    // Movement pattern: dari atas ke tengah dengan sedikit zigzag
+    if (this.spawnPattern === "center_to_edges") {
+      // Bergerak dari tengah atas ke samping
+      this.y += this.speed;
+      this.x += Math.sin(this.phase) * 2;
+      this.phase += 0.1;
+
+      // Ketika sampai tengah, bergerak ke samping
+      if (this.y >= canvas.height / 2) {
+        this.x += this.x < canvas.width / 2 ? -this.speed : this.speed;
+      }
+    } else if (this.spawnPattern === "top_to_center") {
+      // Bergerak langsung ke tengah
+      const dx = canvas.width / 2 - this.x;
+      const dy = canvas.height / 2 - this.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance > 5) {
+        this.x += (dx / distance) * this.speed;
+        this.y += (dy / distance) * this.speed;
+      } else {
+        // Berputar di tengah
+        this.x += Math.cos(this.phase) * 2;
+        this.y += Math.sin(this.phase) * 2;
+        this.phase += 0.08;
+      }
+    } else {
+      // Random movement
+      this.y += this.speed;
+      this.x += Math.sin(this.phase) * 3;
+      this.phase += 0.15;
+    }
+
+    this.draw();
+  }
+
+  draw() {
+    // Health-based color intensity
+    const healthRatio = this.health / this.maxHealth;
+    const alpha = 0.3 + healthRatio * 0.7;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Draw alien body
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+
+    // Draw health bar if damaged
+    if (this.health < this.maxHealth) {
+      const barWidth = this.width;
+      const barHeight = 4;
+      const barY = this.y - 8;
+
+      // Background
+      ctx.fillStyle = "#444";
+      ctx.fillRect(this.x, barY, barWidth, barHeight);
+
+      // Health
+      ctx.fillStyle =
+        healthRatio > 0.5 ? "#0f0" : healthRatio > 0.25 ? "#ff0" : "#f00";
+      ctx.fillRect(this.x, barY, barWidth * healthRatio, barHeight);
+    }
+
+    // Glow effect
+    const glowSize = this.width + 10;
+    const gradient = ctx.createRadialGradient(
+      this.x + this.width / 2,
+      this.y + this.height / 2,
+      0,
+      this.x + this.width / 2,
+      this.y + this.height / 2,
+      glowSize / 2
+    );
+    gradient.addColorStop(0, this.color + "44");
+    gradient.addColorStop(1, "transparent");
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(this.x - 5, this.y - 5, glowSize, glowSize);
+
+    ctx.restore();
+  }
+
+  takeDamage(damage = 1) {
+    this.health -= damage;
+    return this.health <= 0;
+  }
+}
+
+// Initialize Quick Play Mode
+function initQuickPlayMode() {
+  gameMode = "quickplay";
+  gameState = "playing";
+  quickPlayTimer = 0;
+  alienWaveTimer = 0;
+  quickPlayAliens = [];
+  quickPlayDifficulty = 1;
+
+  // Reset game stats
+  score = 0;
+  lives = PLAYER_CONFIG?.startingLives || 3;
+  combo = 0;
+
+  // Initialize player and game elements
+  initGame();
+  updateQuickPlayUI();
+}
+
+// Spawn Quick Play Aliens
+function spawnQuickPlayWave() {
+  const difficulty =
+    QUICKPLAY_CONFIG.difficultyProgression[settings.difficulty] ||
+    QUICKPLAY_CONFIG.difficultyProgression.normal;
+
+  const alienCount = Math.floor(difficulty.alienCount * quickPlayDifficulty);
+  const types = ["small", "medium", "fast"];
+
+  for (let i = 0; i < alienCount; i++) {
+    const type = types[Math.floor(Math.random() * types.length)];
+    const config = QUICKPLAY_CONFIG.alienTypes[type];
+
+    let startX, startY;
+
+    // Spawn positions based on pattern
+    switch (config.spawnPattern) {
+      case "center_to_edges":
+        startX = canvas.width / 2 + (Math.random() - 0.5) * 100;
+        startY = -50;
+        break;
+      case "top_to_center":
+        startX = Math.random() * canvas.width;
+        startY = -50;
+        break;
+      default: // random
+        startX = Math.random() * (canvas.width - config.width);
+        startY = -50;
+    }
+
+    quickPlayAliens.push(new QuickPlayAlien(type, startX, startY));
+  }
+
+  // Increase difficulty gradually
+  quickPlayDifficulty += 0.1;
+}
+
+// Update Quick Play Mode
+function updateQuickPlayMode() {
+  if (gameMode !== "quickplay") return;
+
+  quickPlayTimer++;
+  alienWaveTimer++;
+
+  // Spawn new waves
+  if (alienWaveTimer >= QUICKPLAY_CONFIG.alienWaveInterval) {
+    spawnQuickPlayWave();
+    alienWaveTimer = 0;
+  }
+
+  // Update aliens
+  quickPlayAliens.forEach((alien, index) => {
+    alien.update();
+
+    // Remove aliens that go off screen
+    if (
+      alien.x < -alien.width ||
+      alien.x > canvas.width + alien.width ||
+      alien.y > canvas.height + alien.height
+    ) {
+      quickPlayAliens.splice(index, 1);
+    }
+
+    // Check collision with player
+    if (player && checkCollision(player, alien)) {
+      if (invincibilityTimer <= 0) {
+        lives--;
+        invincibilityTimer = GAME_CONFIG?.invincibilityDuration || 120;
+        playSound("hit");
+        createExplosion(
+          player.x + player.width / 2,
+          player.y + player.height / 2,
+          "#ff4444"
+        );
+
+        if (lives <= 0) {
+          gameState = "gameOver";
+          // Update high score for quick play
+          if (score > quickPlayHighScore) {
+            quickPlayHighScore = score;
+            localStorage.setItem("quickPlayHighScore", quickPlayHighScore);
+          }
+        }
+      }
+      quickPlayAliens.splice(index, 1);
+    }
+  });
+
+  // Check bullet collisions with quick play aliens
+  bullets.forEach((bullet, bulletIndex) => {
+    quickPlayAliens.forEach((alien, alienIndex) => {
+      if (checkCollision(bullet, alien)) {
+        const killed = alien.takeDamage();
+
+        if (killed) {
+          score += alien.points;
+          combo++;
+          maxCombo = Math.max(maxCombo, combo);
+
+          playSound("explosion");
+          createExplosion(
+            alien.x + alien.width / 2,
+            alien.y + alien.height / 2,
+            alien.color
+          );
+
+          quickPlayAliens.splice(alienIndex, 1);
+
+          // Chance for power-up
+          if (Math.random() < 0.1) {
+            const powerUpTypes = ["spread", "rapid", "pierce"];
+            const randomType =
+              powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+            powerUps.push(new PowerUp(alien.x, alien.y, 20, 20, randomType));
+          }
+        }
+
+        bullets.splice(bulletIndex, 1);
+      }
+    });
+  });
+
+  updateQuickPlayUI();
+}
+
+// Update Quick Play UI
+function updateQuickPlayUI() {
+  const playTime = Math.floor(quickPlayTimer / 60); // Convert frames to seconds
+  levelElement.textContent = `Quick Play | Waktu: ${playTime}s | High Score: ${quickPlayHighScore} | Aliens: ${quickPlayAliens.length}`;
 }
 
 function gameLoop() {
@@ -1199,6 +1710,13 @@ function gameLoop() {
 
     // Update and draw player
     player.update();
+
+    // Handle different game modes
+    if (gameMode === "quickplay") {
+      updateQuickPlayMode();
+    } else if (gameMode === "mission") {
+      checkMissionComplete();
+    }
 
     // Update bullets
     for (let i = bullets.length - 1; i >= 0; i--) {
@@ -1245,164 +1763,176 @@ function gameLoop() {
       }
     }
 
-    // Update invaders
-    let shouldMoveDown = false;
+    // Update invaders (only for normal and mission modes, not quickplay)
+    if (gameMode !== "quickplay") {
+      let shouldMoveDown = false;
 
-    // Check boundaries first
-    invaders.forEach((invader) => {
-      if (invader.x <= 0 || invader.x + invader.width >= canvas.width) {
-        shouldMoveDown = true;
-      }
-    });
-
-    // Update invaders and check collisions
-    for (let i = invaders.length - 1; i >= 0; i--) {
-      const invader = invaders[i];
-      invader.update();
-      invader.shoot();
-
-      // Check collision with bullets
-      for (let j = bullets.length - 1; j >= 0; j--) {
-        const bullet = bullets[j];
-        if (checkCollision(bullet, invader)) {
-          // Remove bullet and invader
-          bullets.splice(j, 1);
-          invaders.splice(i, 1);
-
-          // Add score
-          score += invader.points * (combo + 1);
-          combo++;
-
-          // Create explosion effect
-          createExplosion(
-            invader.x + invader.width / 2,
-            invader.y + invader.height / 2,
-            invader.color
-          );
-
-          // Play sound
-          playSound(800, "square", 0.1, 0.1);
-
-          // Chance to drop power-up
-          if (Math.random() < 0.1) {
-            const powerUpTypes = ["spread", "rapid", "pierce"];
-            const type =
-              powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
-            powerUps.push(
-              new PowerUp(
-                invader.x + invader.width / 2 - 10,
-                invader.y,
-                20,
-                20,
-                type
-              )
-            );
-          }
-          break; // Exit bullet loop since invader is destroyed
+      // Check boundaries first
+      invaders.forEach((invader) => {
+        if (invader.x <= 0 || invader.x + invader.width >= canvas.width) {
+          shouldMoveDown = true;
         }
-      }
+      });
 
-      // Only check player collision if invader still exists
-      if (
-        invaders[i] &&
-        checkCollision(invaders[i], player) &&
-        !settings.godMode &&
-        invincibilityTimer <= 0
-      ) {
-        lives--;
-        invincibilityTimer = 120; // 2 seconds of invincibility at 60fps
-        createExplosion(
-          player.x + player.width / 2,
-          player.y + player.height / 2,
-          "red"
-        );
-        playSound(440, "sawtooth", 0.3, 0.5);
+      // Update invaders and check collisions
+      for (let i = invaders.length - 1; i >= 0; i--) {
+        const invader = invaders[i];
+        invader.update();
+        invader.shoot();
 
-        if (lives <= 0) {
+        // Check collision with bullets
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          const bullet = bullets[j];
+          if (checkCollision(bullet, invader)) {
+            // Remove bullet and invader
+            bullets.splice(j, 1);
+            invaders.splice(i, 1);
+
+            // Add score
+            score += invader.points * (combo + 1);
+            combo++;
+
+            // Update mission progress if in mission mode
+            if (gameMode === "mission") {
+              const mission = MISSION_CONFIG.missionTypes[currentMission];
+              if (mission && mission.type === "eliminate") {
+                missionProgress++;
+              }
+            }
+
+            // Create explosion effect
+            createExplosion(
+              invader.x + invader.width / 2,
+              invader.y + invader.height / 2,
+              invader.color
+            );
+
+            // Play sound
+            playSound(800, "square", 0.1, 0.1);
+
+            // Chance to drop power-up
+            if (Math.random() < 0.1) {
+              const powerUpTypes = ["spread", "rapid", "pierce"];
+              const type =
+                powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+              powerUps.push(
+                new PowerUp(
+                  invader.x + invader.width / 2 - 10,
+                  invader.y,
+                  20,
+                  20,
+                  type
+                )
+              );
+            }
+            break; // Exit bullet loop since invader is destroyed
+          }
+        }
+
+        // Only check player collision if invader still exists
+        if (
+          invaders[i] &&
+          checkCollision(invaders[i], player) &&
+          !settings.godMode &&
+          invincibilityTimer <= 0
+        ) {
+          lives--;
+          invincibilityTimer = 120; // 2 seconds of invincibility at 60fps
+          createExplosion(
+            player.x + player.width / 2,
+            player.y + player.height / 2,
+            "red"
+          );
+          playSound(440, "sawtooth", 0.3, 0.5);
+
+          if (lives <= 0) {
+            gameState = "gameOver";
+            updateHighScore();
+            playSound(200, "sawtooth", 0.5, 2);
+            setTimeout(() => {
+              gameOver();
+              document
+                .getElementById("gameOverMenu")
+                .classList.remove("hidden");
+            }, 100);
+            return;
+          }
+        }
+
+        // Check if invaders reached bottom
+        if (
+          invaders[i] &&
+          invaders[i].y + invaders[i].height >= canvas.height - 50 &&
+          !settings.godMode
+        ) {
           gameState = "gameOver";
           updateHighScore();
           playSound(200, "sawtooth", 0.5, 2);
-          setTimeout(() => {
-            gameOver();
-            document.getElementById("gameOverMenu").classList.remove("hidden");
-          }, 100);
+          setTimeout(gameOver, 100);
           return;
         }
       }
 
-      // Check if invaders reached bottom
-      if (
-        invaders[i] &&
-        invaders[i].y + invaders[i].height >= canvas.height - 50 &&
-        !settings.godMode
-      ) {
-        gameState = "gameOver";
-        updateHighScore();
-        playSound(200, "sawtooth", 0.5, 2);
-        setTimeout(gameOver, 100);
-        return;
-      }
-    }
-
-    // Move invaders down and change direction
-    if (shouldMoveDown) {
-      invaderDirection *= -1;
-      invaders.forEach((invader) => {
-        invader.y += 20;
-      });
-    }
-
-    // Check if level is complete (all invaders AND boss destroyed)
-    if (invaders.length === 0 && (!currentBoss || currentBoss.isDestroyed)) {
-      level++;
-
-      // Check if game is complete
-      if (level > maxLevel) {
-        gameState = "win";
-        updateHighScore();
-        playSound(1000, "sine", 0.3, 2);
-        setTimeout(() => {
-          alert("🎉 CONGRATULATIONS! You have saved Earth! 🎉");
-          gameState = "menu";
-        }, 100);
-        return;
+      // Move invaders down and change direction
+      if (shouldMoveDown) {
+        invaderDirection *= -1;
+        invaders.forEach((invader) => {
+          invader.y += 20;
+        });
       }
 
-      createInvaders();
-      playSound(1200, "sine", 0.2, 0.5);
+      // Check if level is complete (all invaders AND boss destroyed)
+      if (invaders.length === 0 && (!currentBoss || currentBoss.isDestroyed)) {
+        level++;
 
-      // Show level completion message briefly
-      ctx.fillStyle = "#00ff00";
-      ctx.font = "24px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText(
-        `Level ${level - 1} Complete!`,
-        canvas.width / 2,
-        canvas.height / 2 - 20
-      );
-
-      if (level <= 4) {
-        ctx.fillText(
-          `Get ready for Boss Level ${level}!`,
-          canvas.width / 2,
-          canvas.height / 2 + 20
-        );
-      } else {
-        ctx.fillText(
-          `Final Level: Alien Swarm!`,
-          canvas.width / 2,
-          canvas.height / 2 + 20
-        );
-      }
-
-      // Pause briefly to show message
-      gameState = "paused";
-      setTimeout(() => {
-        if (gameState === "paused") {
-          gameState = "playing";
+        // Check if game is complete
+        if (level > maxLevel) {
+          gameState = "win";
+          updateHighScore();
+          playSound(1000, "sine", 0.3, 2);
+          setTimeout(() => {
+            alert("🎉 CONGRATULATIONS! You have saved Earth! 🎉");
+            gameState = "menu";
+          }, 100);
+          return;
         }
-      }, 2000);
-    }
+
+        createInvaders();
+        playSound(1200, "sine", 0.2, 0.5);
+
+        // Show level completion message briefly
+        ctx.fillStyle = "#00ff00";
+        ctx.font = "24px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(
+          `Level ${level - 1} Complete!`,
+          canvas.width / 2,
+          canvas.height / 2 - 20
+        );
+
+        if (level <= 4) {
+          ctx.fillText(
+            `Get ready for Boss Level ${level}!`,
+            canvas.width / 2,
+            canvas.height / 2 + 20
+          );
+        } else {
+          ctx.fillText(
+            `Final Level: Alien Swarm!`,
+            canvas.width / 2,
+            canvas.height / 2 + 20
+          );
+        }
+
+        // Pause briefly to show message
+        gameState = "paused";
+        setTimeout(() => {
+          if (gameState === "paused") {
+            gameState = "playing";
+          }
+        }, 2000);
+      }
+    } // End of gameMode !== "quickplay" block
 
     // Update boss if present
     if (currentBoss && !currentBoss.isDestroyed) {
@@ -1417,6 +1947,21 @@ function gameLoop() {
           if (currentBoss.takeDamage()) {
             // Boss destroyed
             playSound(500, "sine", 0.3, 1);
+
+            // Add boss score
+            score += BOSS_CONFIG?.points || 500;
+
+            // Update mission progress if in mission mode
+            if (gameMode === "mission") {
+              const mission = MISSION_CONFIG.missionTypes[currentMission];
+              if (
+                mission &&
+                (mission.type === "boss" || mission.type === "final_boss")
+              ) {
+                // Boss mission completed, will be checked in checkMissionComplete
+                checkMissionComplete();
+              }
+            }
           } else {
             // Boss hit but not destroyed
             playSound(600, "triangle", 0.2, 0.2);
@@ -1549,10 +2094,7 @@ window.pauseGame = pauseGame;
 
 // Menu event listeners
 document.getElementById("startBtn").addEventListener("click", () => {
-  console.log("Start button clicked!");
-  gameState = "playing";
-  pausedForNavigation = false; // Reset navigation pause flag
-  startMenu.classList.add("hidden");
+  console.log("Start Mission button clicked!");
 
   // Initialize audio with user interaction
   initAudio();
@@ -1568,19 +2110,20 @@ document.getElementById("startBtn").addEventListener("click", () => {
     startBackgroundMusic();
   }
 
-  // Initialize full game
-  initGame();
+  // Hide menu
+  startMenu.classList.add("hidden");
+  pausedForNavigation = false; // Reset navigation pause flag
 
+  // Initialize Mission Mode
+  initMissionMode();
   updateUI();
 });
 
 // Quick Play button
 document.getElementById("quickPlayBtn").addEventListener("click", () => {
   console.log("Quick Play button clicked!");
-  gameState = "playing";
-  pausedForNavigation = false; // Reset navigation pause flag
-  startMenu.classList.add("hidden");
 
+  // Initialize audio with user interaction
   initAudio();
 
   // Initialize and start background music with force
@@ -1594,7 +2137,12 @@ document.getElementById("quickPlayBtn").addEventListener("click", () => {
     startBackgroundMusic();
   }
 
-  initGame();
+  // Hide menu
+  startMenu.classList.add("hidden");
+  pausedForNavigation = false; // Reset navigation pause flag
+
+  // Initialize Quick Play Mode
+  initQuickPlayMode();
   updateUI();
 });
 
@@ -1604,42 +2152,6 @@ document.getElementById("restartBtn").addEventListener("click", () => {
   // Hide game over menu
   document.getElementById("gameOverMenu").classList.add("hidden");
 
-  // Reset all game state variables
-  gameState = "playing";
-  pausedForNavigation = false; // Reset navigation pause flag
-  score = 0;
-  lives = 100000000000000;
-  level = 1;
-  combo = 0;
-  weaponType = "normal";
-  weaponTimer = 0;
-  invincibilityTimer = 0;
-  maxCombo = 0;
-
-  // Clear all arrays
-  bullets = [];
-  enemyBullets = [];
-  invaders = [];
-  powerUps = [];
-  particles = [];
-  shields = [];
-  stars = [];
-  boss = null;
-  currentBoss = null;
-
-  // Reset keys and mouse
-  keys = {};
-  mouseX = 0;
-
-  // Hide all menus except canvas
-  document.getElementById("startMenu").classList.add("hidden");
-  document.getElementById("winMenu").classList.add("hidden");
-  document.getElementById("pauseMenu").classList.add("hidden");
-
-  // Re-initialize game objects and UI
-  initGame();
-  updateUI();
-
   // Re-initialize audio
   initAudio();
   initBackgroundMusic();
@@ -1647,6 +2159,52 @@ document.getElementById("restartBtn").addEventListener("click", () => {
   if (settings.musicEnabled) {
     startBackgroundMusic();
   }
+
+  // Restart based on current game mode
+  if (gameMode === "mission") {
+    currentMission = 1; // Reset to mission 1
+    initMissionMode();
+  } else if (gameMode === "quickplay") {
+    initQuickPlayMode();
+  } else {
+    // Normal mode
+    gameMode = "normal";
+    gameState = "playing";
+    pausedForNavigation = false;
+    score = 0;
+    lives = PLAYER_CONFIG?.startingLives || 3;
+    level = 1;
+    combo = 0;
+    weaponType = "normal";
+    weaponTimer = 0;
+    invincibilityTimer = 0;
+    maxCombo = 0;
+
+    // Clear all arrays
+    bullets = [];
+    enemyBullets = [];
+    invaders = [];
+    powerUps = [];
+    particles = [];
+    shields = [];
+    stars = [];
+    boss = null;
+    currentBoss = null;
+
+    // Reset keys and mouse
+    keys = {};
+    mouseX = 0;
+
+    // Initialize game objects and UI
+    initGame();
+  }
+
+  updateUI();
+
+  // Hide all menus except canvas
+  document.getElementById("startMenu").classList.add("hidden");
+  document.getElementById("winMenu").classList.add("hidden");
+  document.getElementById("pauseMenu").classList.add("hidden");
 
   // Re-create stars for background
   createStars();
