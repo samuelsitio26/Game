@@ -413,10 +413,10 @@ class Player {
     if (controlMode === "keyboard" || controlMode === "both") {
       // Keyboard control
       if (keys["ArrowLeft"] && this.x > 0) {
-        this.x -= playerSpeed;
+        this.x -= this.speed;
       }
       if (keys["ArrowRight"] && this.x < canvas.width - this.width) {
-        this.x += playerSpeed;
+        this.x += this.speed;
       }
     }
 
@@ -1886,7 +1886,7 @@ function gameLoop() {
         level++;
 
         // Check if game is complete
-        if (level > maxLevel) {
+        if (level > (GAME_CONFIG?.maxLevel || 20)) {
           gameState = "win";
           updateHighScore();
           playSound(1000, "sine", 0.3, 2);
@@ -2009,7 +2009,7 @@ function gameLoop() {
       // Check collision with player
       if (checkCollision(powerUps[i], player)) {
         weaponType = powerUps[i].type;
-        weaponTimer = powerUpDuration;
+        weaponTimer = POWERUP_CONFIG?.duration || 600;
         playSound(600, "sine", 0.2, 0.3);
         powerUps.splice(i, 1);
       }
