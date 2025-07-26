@@ -66,13 +66,26 @@ let settings = DEFAULT_SETTINGS
 // Make settings globally accessible
 window.settings = settings;
 
-// Canvas dimensions - Menggunakan CANVAS_CONFIG dari config.js
+// Canvas dimensions - Menggunakan CANVAS_CONFIG dari config.js dengan ukuran tetap
 if (CANVAS_CONFIG) {
-  canvas.width = CANVAS_CONFIG.width;
-  canvas.height = CANVAS_CONFIG.height;
+  canvas.width = CANVAS_CONFIG.width; // 900px
+  canvas.height = CANVAS_CONFIG.height; // 600px
 } else {
-  canvas.width = 800;
+  canvas.width = 900; // Fallback ke ukuran baru
   canvas.height = 600;
+}
+
+// Fungsi untuk menjaga ukuran canvas tetap konsisten
+function updateCanvasSize() {
+  // Set ukuran internal canvas (rendering)
+  canvas.width = CANVAS_CONFIG?.width || 900;
+  canvas.height = CANVAS_CONFIG?.height || 600;
+
+  // Set ukuran display CSS dengan !important untuk override zoom
+  canvas.style.width = "900px";
+  canvas.style.height = "600px";
+  canvas.style.transform = "scale(1)";
+  canvas.style.transformOrigin = "center";
 }
 
 // Boss system
@@ -291,6 +304,12 @@ function resumeBackgroundMusic() {
 const scoreElement = document.getElementById("score");
 const livesElement = document.getElementById("lives");
 const levelElement = document.getElementById("level");
+
+// Desktop UI Elements (for split layout)
+const scoreElementDesktop = document.getElementById("score-desktop");
+const livesElementDesktop = document.getElementById("lives-desktop");
+const levelElementDesktop = document.getElementById("level-desktop");
+
 const startMenu = document.getElementById("startMenu");
 const gameOverMenu = document.getElementById("gameOverMenu");
 const winMenu = document.getElementById("winMenu");
@@ -927,11 +946,14 @@ class EnemyBullet extends Bullet {
 
 // Initialize complete game
 function initGame() {
-  // Initialize player - menggunakan konfigurasi dari config.js
+  // Pastikan canvas ukuran tetap konsisten
+  updateCanvasSize();
+
+  // Initialize player - menggunakan konfigurasi dari config.js dengan jarak lebih baik
   const playerWidth = PLAYER_CONFIG?.width || 50;
   const playerHeight = PLAYER_CONFIG?.height || 30;
   const playerX = (canvas.width - playerWidth) / 2;
-  const playerY = canvas.height - playerHeight - 20;
+  const playerY = canvas.height - playerHeight - 40; // Ditambah dari 20 ke 40 untuk jarak lebih baik
   player = new Player(playerX, playerY); // Constructor sudah dimodifikasi
 
   // Reset game arrays
@@ -962,9 +984,11 @@ function createInvaders() {
   currentBoss = null;
 
   // Menggunakan konfigurasi dari config.js
-  const invaderWidth = INVADER_CONFIG?.width || 40;
-  const invaderHeight = INVADER_CONFIG?.height || 30;
-  const invaderGap = INVADER_CONFIG?.gap || 10;
+  const invaderWidth = INVADER_CONFIG?.width || 35;
+  const invaderHeight = INVADER_CONFIG?.height || 25;
+  const invaderGap = INVADER_CONFIG?.gap || 15;
+  const rows = INVADER_CONFIG?.rows || 4;
+  const cols = INVADER_CONFIG?.cols || 8;
   const levelConfig = getLevelConfig ? getLevelConfig(level) : null;
 
   // Update speed and shoot chance berdasarkan level
@@ -982,14 +1006,14 @@ function createInvaders() {
     const bossY = 50;
     currentBoss = new Boss(bossX, bossY, bossLevel);
 
-    // Add some support invaders for boss levels
-    const supportCount = Math.min(level * 2, 8);
-    const startX = 100;
-    const startY = 200;
+    // Add some support invaders for boss levels dengan jarak yang lebih baik
+    const supportCount = Math.min(level * 2, 6); // Dikurangi dari 8 ke 6
+    const startX = (canvas.width - 3 * (invaderWidth + invaderGap)) / 2; // Posisi tengah
+    const startY = 220; // Lebih jauh dari player
 
     for (let i = 0; i < supportCount; i++) {
-      const x = startX + (i % 4) * (invaderWidth + invaderGap);
-      const y = startY + Math.floor(i / 4) * (invaderHeight + invaderGap);
+      const x = startX + (i % 3) * (invaderWidth + invaderGap + 20); // Gap lebih besar
+      const y = startY + Math.floor(i / 3) * (invaderHeight + invaderGap + 15);
       invaders.push(
         new Invader(x, y, invaderWidth, invaderHeight, "#00aaff", 15)
       );
@@ -999,12 +1023,14 @@ function createInvaders() {
       `Level ${level}: Boss ${bossLevel} created with ${supportCount} support invaders`
     );
   } else if (level === 5) {
-    // Final level - only aliens, no boss
+    // Final level - only aliens, no boss dengan formasi yang lebih rapi
     bossLevel = 0;
-    const rows = INVADER_CONFIG?.rows || 6;
-    const cols = INVADER_CONFIG?.cols || 12;
-    const startX = 50;
-    const startY = 50;
+
+    // Hitung posisi untuk formasi yang seimbang
+    const totalWidth = cols * invaderWidth + (cols - 1) * invaderGap;
+    const totalHeight = rows * invaderHeight + (rows - 1) * invaderGap;
+    const startX = (canvas.width - totalWidth) / 2; // Posisi tengah horizontal
+    const startY = 60; // Jauh dari player
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
@@ -1021,9 +1047,12 @@ function createInvaders() {
             points = 50;
             break;
           case 1:
-          case 2:
-            color = "#ffff44"; // Yellow - middle rows
+            color = "#ffff44"; // Yellow - second row
             points = 30;
+            break;
+          case 2:
+            color = "#44ffff"; // Cyan - third row
+            points = 25;
             break;
           default:
             color = "#44ff44"; // Green - bottom rows
@@ -1202,8 +1231,13 @@ function createStars() {
 
 // Update UI
 function updateUI() {
+  // Update mobile/traditional UI
   scoreElement.textContent = `Score: ${score}`;
   livesElement.textContent = `Lives: ${lives}`;
+
+  // Update desktop split UI
+  if (scoreElementDesktop) scoreElementDesktop.textContent = `Score: ${score}`;
+  if (livesElementDesktop) livesElementDesktop.textContent = `Lives: ${lives}`;
 
   // Handle different game modes
   if (gameMode === "mission") {
@@ -1212,6 +1246,8 @@ function updateUI() {
     updateQuickPlayUI();
   } else {
     levelElement.textContent = `Level: ${level}`;
+    if (levelElementDesktop)
+      levelElementDesktop.textContent = `Level: ${level}`;
   }
 
   // Add combo, weapon info, and control mode to score element
@@ -1392,6 +1428,8 @@ function updateMissionUI() {
   }
 
   levelElement.textContent = `Misi ${currentMission}: ${mission.description} | ${progressText}`;
+  if (levelElementDesktop)
+    levelElementDesktop.textContent = `Misi ${currentMission}: ${mission.description} | ${progressText}`;
 }
 
 // ====================================
@@ -1673,7 +1711,9 @@ function updateQuickPlayMode() {
 // Update Quick Play UI
 function updateQuickPlayUI() {
   const playTime = Math.floor(quickPlayTimer / 60); // Convert frames to seconds
-  levelElement.textContent = `Quick Play | Waktu: ${playTime}s | High Score: ${quickPlayHighScore} | Aliens: ${quickPlayAliens.length}`;
+  const quickPlayText = `Quick Play | Waktu: ${playTime}s | High Score: ${quickPlayHighScore} | Aliens: ${quickPlayAliens.length}`;
+  levelElement.textContent = quickPlayText;
+  if (levelElementDesktop) levelElementDesktop.textContent = quickPlayText;
 }
 
 function gameLoop() {
@@ -2499,6 +2539,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize music system immediately
   console.log("DOM Content Loaded, initializing music...");
 
+  // Pastikan canvas ukuran tetap sejak awal
+  updateCanvasSize();
+
   // Set initial game state to menu
   gameState = "menu";
 
@@ -2530,6 +2573,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, 1000);
 });
+
+// Event listener untuk menjaga ukuran canvas tetap konsisten saat resize atau zoom
+window.addEventListener("resize", () => {
+  updateCanvasSize();
+});
+
+// Event listener untuk mendeteksi zoom dan menjaga ukuran canvas
+window.addEventListener("wheel", (e) => {
+  if (e.ctrlKey) {
+    // Zoom detected, maintain canvas size
+    setTimeout(updateCanvasSize, 100);
+  }
+});
+
+// Periodic check untuk memastikan canvas tetap ukuran yang benar
+setInterval(() => {
+  if (canvas.style.width !== "900px" || canvas.style.height !== "600px") {
+    updateCanvasSize();
+  }
+}, 1000);
+
+// Initialize canvas size immediately
+updateCanvasSize();
 
 // Start game loop immediately for menu rendering
 gameLoop();

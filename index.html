@@ -16,13 +16,29 @@
         <div class="nav-item" data-menu="about">ℹ️ ABOUT</div>
       </nav>
 
+      <!-- Mobile/Traditional Layout (will be hidden on desktop) -->
       <div id="gameUI">
         <div id="score">Score: 0</div>
         <div id="lives">Lives: 100000000000000</div>
         <div id="level">Level: 1</div>
       </div>
 
-      <canvas id="gameCanvas" width="800" height="600"></canvas>
+      <!-- Desktop Split Layout -->
+      <div class="game-layout">
+        <!-- Left UI Elements (1 element) -->
+        <div class="gameUI-left">
+          <div id="score-desktop">Score: 0</div>
+        </div>
+
+        <!-- Canvas Center -->
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+        <!-- Right UI Elements (2 elements) -->
+        <div class="gameUI-right">
+          <div id="lives-desktop">Lives: 100000000000000</div>
+          <div id="level-desktop">Level: 1</div>
+        </div>
+      </div>
 
       <!-- Main Menu -->
       <div id="startMenu" class="menu">

@@ -8,7 +8,7 @@
 // CANVAS & DISPLAY SETTINGS
 // ====================================
 const CANVAS_CONFIG = {
-  width: 800,
+  width: 900,
   height: 600,
 };
 
@@ -37,13 +37,13 @@ const BULLET_CONFIG = {
 // ENEMY/INVADER SETTINGS
 // ====================================
 const INVADER_CONFIG = {
-  width: 40,
-  height: 30,
+  width: 35,
+  height: 25,
   initialSpeed: 1,
   speedIncreasePerLevel: 0.5,
-  rows: 5,
-  cols: 10,
-  gap: 10,
+  rows: 4, // Dikurangi dari 5 ke 4 untuk jarak yang lebih baik
+  cols: 8, // Dikurangi dari 10 ke 8 untuk jarak yang lebih lebar
+  gap: 15, // Ditambah dari 10 ke 15 untuk jarak antar alien
   initialShootChance: 0.001,
   shootChanceIncreasePerLevel: 0.0005,
   points: {
