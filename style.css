@@ -1097,6 +1097,27 @@ select:focus {
 @media screen and (max-device-width: 768px) and (min-width: 769px) {
   /* Ketika mobile menggunakan desktop view */
   
+  /* PAKSA sembunyikan desktop UI sidebar dengan prioritas tinggi */
+  .gameUI-left,
+  .gameUI-right {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+  
+  /* Pastikan div di dalam juga tersembunyi */
+  .gameUI-left div,
+  .gameUI-right div {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+  
   /* Force tampilkan mobile UI di desktop view */
   #gameUI {
     display: flex !important; /* Override desktop hide */
@@ -1133,12 +1154,6 @@ select:focus {
     text-align: center;
   }
 
-  /* Sembunyikan desktop UI sidebar */
-  .gameUI-left,
-  .gameUI-right {
-    display: none !important;
-  }
-
   /* Force layout vertikal seperti mobile */
   .game-layout {
     flex-direction: column !important;
@@ -1146,6 +1161,25 @@ select:focus {
     width: 100% !important;
     align-items: center !important;
     justify-content: center !important;
+    /* Pastikan tidak ada space untuk sidebar */
+    max-width: 100% !important;
+  }
+  
+  /* Pastikan tidak ada elemen UI desktop yang muncul */
+  .game-layout > .gameUI-left,
+  .game-layout > .gameUI-right,
+  .canvas-container ~ .gameUI-left,
+  .canvas-container ~ .gameUI-right {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
   }
 
   /* Adjust canvas size untuk mobile dengan desktop view */
@@ -1188,7 +1222,7 @@ select:focus {
     min-width: 60px !important;
   }
 
-  /* Container adjustment */
+  /* Container adjustment - paksa mobile layout */
   #gameContainer {
     position: relative !important;
     min-height: 100vh !important;
@@ -1201,5 +1235,35 @@ select:focus {
     box-sizing: border-box !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
+  }
+  
+  /* Paksa sembunyikan semua elemen UI desktop dengan selector yang lebih spesifik */
+  #gameContainer .gameUI-left,
+  #gameContainer .gameUI-right,
+  .game-layout .gameUI-left,
+  .game-layout .gameUI-right,
+  div.gameUI-left,
+  div.gameUI-right {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    z-index: -1 !important;
+  }
+  
+  /* Paksa sembunyikan semua child elements dari gameUI-left dan gameUI-right */
+  .gameUI-left *,
+  .gameUI-right * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
 }
