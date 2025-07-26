@@ -254,7 +254,7 @@ canvas {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 10px;
+    padding: 5px;
     box-sizing: border-box;
     overflow-x: hidden;
     overflow-y: auto;
@@ -278,12 +278,12 @@ canvas {
     display: flex !important; /* Show mobile UI */
     justify-content: space-between;
     align-items: center;
-    width: 95vw;
-    max-width: 400px;
-    margin-bottom: 10px;
-    font-size: 12px;
+    width: 90vw;
+    max-width: 380px;
+    margin-bottom: 8px;
+    font-size: 11px;
     font-weight: bold;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
     flex-direction: row;
   }
@@ -294,8 +294,8 @@ canvas {
       rgba(0, 0, 0, 0.8),
       rgba(0, 50, 100, 0.3)
     );
-    padding: 8px 15px;
-    border-radius: 15px;
+    padding: 6px 10px;
+    border-radius: 12px;
     border: 2px solid #00ff41;
     color: #00ff41;
     text-shadow: 0 0 12px #00ff41;
@@ -303,21 +303,21 @@ canvas {
       0 0 15px rgba(0, 255, 65, 0.3);
     backdrop-filter: blur(8px);
     transition: all 0.3s ease;
-    font-size: 11px;
+    font-size: 10px;
     flex: 1;
-    min-width: 80px;
+    min-width: 75px;
     text-align: center;
   }
 
   canvas {
-    width: 95vw !important;
-    height: calc(95vw * 1.2) !important; /* Portrait ratio 1:1.2 - Lebih pendek agar tidak terpotong */
+    width: 90vw !important;
+    height: calc(90vw * 1.0) !important; /* Square ratio 1:1 - Lebih kompak */
     min-width: 280px !important;
-    min-height: 336px !important;
-    max-width: 400px !important;
-    max-height: 480px !important;
+    min-height: 280px !important;
+    max-width: 380px !important;
+    max-height: 380px !important;
     border-width: 2px;
-    margin: 0 auto;
+    margin: 5px auto;
     transform: none !important;
     transform-origin: center center;
     position: relative;
@@ -327,13 +327,13 @@ canvas {
   .navbar {
     position: sticky;
     top: 5px;
-    margin: 0 auto 10px auto;
-    width: 95vw;
-    max-width: 400px;
-    gap: 5px;
-    padding: 8px;
-    font-size: 11px;
-    border-radius: 15px;
+    margin: 0 auto 8px auto;
+    width: 90vw;
+    max-width: 380px;
+    gap: 4px;
+    padding: 6px;
+    font-size: 10px;
+    border-radius: 12px;
     flex-wrap: wrap;
     justify-content: space-around;
     background: rgba(0, 0, 0, 0.95);
@@ -341,32 +341,32 @@ canvas {
   }
 
   .navbar .nav-item {
-    padding: 6px 12px;
-    font-size: 10px;
-    border-radius: 8px;
+    padding: 5px 8px;
+    font-size: 9px;
+    border-radius: 6px;
     flex: 1;
     text-align: center;
-    min-width: 60px;
+    min-width: 50px;
   }
 
   /* GameUI mobile layout */
   #gameUI {
-    width: 95vw;
-    max-width: 400px;
-    font-size: 12px;
+    width: 90vw;
+    max-width: 380px;
+    font-size: 11px;
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   #gameUI div {
-    padding: 8px 15px;
-    font-size: 11px;
-    border-radius: 15px;
+    padding: 6px 10px;
+    font-size: 10px;
+    border-radius: 12px;
     flex: 1;
-    min-width: 80px;
+    min-width: 75px;
     text-align: center;
   }
 }
@@ -563,46 +563,46 @@ canvas {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 15px;
+    padding: 5px;
     box-sizing: border-box;
     overflow-x: hidden;
     overflow-y: auto;
   }
 
   canvas {
-    width: 98vw !important;
-    height: calc(98vw * 1.2) !important; /* Ratio 1:1.2 - Lebih pendek untuk layar kecil */
-    max-width: 350px !important;
-    max-height: 420px !important;
-    min-width: 250px !important;
-    min-height: 300px !important;
+    width: 90vw !important;
+    height: calc(90vw * 1.0) !important; /* Square ratio 1:1 untuk layar kecil */
+    max-width: 320px !important;
+    max-height: 320px !important;
+    min-width: 240px !important;
+    min-height: 240px !important;
     transform: none !important;
     transform-origin: center center;
-    margin: 0 auto;
+    margin: 5px auto;
     position: relative;
   }
 
   .navbar {
     position: sticky;
     top: 5px;
-    margin: 0 auto 10px auto;
-    width: 98vw;
-    max-width: 350px;
-    gap: 3px;
-    padding: 6px;
+    margin: 0 auto 8px auto;
+    width: 90vw;
+    max-width: 320px;
+    gap: 2px;
+    padding: 5px;
     background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(15px);
   }
 
   .navbar .nav-item {
-    padding: 5px 8px;
-    font-size: 9px;
+    padding: 4px 6px;
+    font-size: 8px;
   }
 
   #gameUI {
-    width: 98vw;
-    max-width: 350px;
-    font-size: 10px;
+    width: 90vw;
+    max-width: 320px;
+    font-size: 9px;
   }
 }
 
