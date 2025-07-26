@@ -1096,7 +1096,7 @@ select:focus {
 /* Mobile dengan Desktop View - Override untuk menampilkan gameUI di atas canvas */
 @media screen and (max-device-width: 768px) and (min-width: 769px) {
   /* Ketika mobile menggunakan desktop view */
-  
+
   /* PAKSA sembunyikan desktop UI sidebar dengan prioritas tinggi */
   .gameUI-left,
   .gameUI-right {
@@ -1109,7 +1109,7 @@ select:focus {
     position: absolute !important;
     left: -9999px !important;
   }
-  
+
   /* Pastikan div di dalam juga tersembunyi */
   .gameUI-left div,
   .gameUI-right div {
@@ -1117,7 +1117,7 @@ select:focus {
     visibility: hidden !important;
     opacity: 0 !important;
   }
-  
+
   /* Force tampilkan mobile UI di desktop view */
   #gameUI {
     display: flex !important; /* Override desktop hide */
@@ -1165,7 +1165,7 @@ select:focus {
     /* Pastikan tidak ada space untuk sidebar */
     max-width: 100% !important;
   }
-  
+
   /* Pastikan tidak ada elemen UI desktop yang muncul */
   .game-layout > .gameUI-left,
   .game-layout > .gameUI-right,
@@ -1239,7 +1239,7 @@ select:focus {
     overflow-x: hidden !important;
     overflow-y: auto !important;
   }
-  
+
   /* Paksa sembunyikan semua elemen UI desktop dengan selector yang lebih spesifik */
   #gameContainer .gameUI-left,
   #gameContainer .gameUI-right,
@@ -1261,7 +1261,7 @@ select:focus {
     top: -9999px !important;
     z-index: -1 !important;
   }
-  
+
   /* Paksa sembunyikan semua child elements dari gameUI-left dan gameUI-right */
   .gameUI-left *,
   .gameUI-right * {
