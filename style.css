@@ -1123,12 +1123,12 @@ select:focus {
     display: flex !important; /* Override desktop hide */
     justify-content: space-between;
     align-items: center;
-    width: 98vw;
-    max-width: 750px;
-    margin: 0 auto 20px auto; /* Posisi di bawah navbar, di atas canvas */
-    font-size: 14px;
+    width: 99vw;
+    max-width: 900px;
+    margin: 0 auto 25px auto; /* Posisi di bawah navbar, di atas canvas */
+    font-size: 16px;
     font-weight: bold;
-    gap: 12px;
+    gap: 15px;
     flex-wrap: wrap;
     flex-direction: row;
   }
@@ -1139,8 +1139,8 @@ select:focus {
       rgba(0, 0, 0, 0.8),
       rgba(0, 50, 100, 0.3)
     );
-    padding: 10px 16px;
-    border-radius: 15px;
+    padding: 12px 20px;
+    border-radius: 18px;
     border: 2px solid #00ff41;
     color: #00ff41;
     text-shadow: 0 0 12px #00ff41;
@@ -1148,16 +1148,17 @@ select:focus {
       0 0 15px rgba(0, 255, 65, 0.3);
     backdrop-filter: blur(8px);
     transition: all 0.3s ease;
-    font-size: 13px;
+    font-size: 15px;
     flex: 1;
-    min-width: 85px;
+    min-width: 100px;
     text-align: center;
+    font-weight: bold;
   }
 
   /* Force layout vertikal seperti mobile */
   .game-layout {
     flex-direction: column !important;
-    gap: 15px !important;
+    gap: 20px !important;
     width: 100% !important;
     align-items: center !important;
     justify-content: center !important;
@@ -1184,29 +1185,30 @@ select:focus {
 
   /* Adjust canvas size untuk mobile dengan desktop view */
   canvas {
-    width: 98vw !important;
-    height: calc(98vw * 0.67) !important; /* Maintain 3:2 aspect ratio */
-    max-width: 750px !important;
-    max-height: 500px !important;
-    min-width: 400px !important;
-    min-height: 268px !important;
+    width: 99vw !important;
+    height: calc(99vw * 0.65) !important; /* Maintain good aspect ratio */
+    max-width: 900px !important;
+    max-height: 585px !important;
+    min-width: 500px !important;
+    min-height: 325px !important;
     transform: none !important;
     transform-origin: center center;
     margin: 0 auto;
     position: relative;
+    border-width: 3px !important;
   }
 
   /* Navbar tetap responsive */
   .navbar {
     position: sticky !important;
     top: 10px !important;
-    margin: 0 auto 20px auto !important;
-    width: 98vw !important;
-    max-width: 750px !important;
-    gap: 12px !important;
-    padding: 12px !important;
-    font-size: 14px !important;
-    border-radius: 15px !important;
+    margin: 0 auto 25px auto !important;
+    width: 99vw !important;
+    max-width: 900px !important;
+    gap: 15px !important;
+    padding: 15px !important;
+    font-size: 16px !important;
+    border-radius: 18px !important;
     flex-wrap: wrap !important;
     justify-content: space-around !important;
     background: rgba(0, 0, 0, 0.95) !important;
@@ -1214,12 +1216,13 @@ select:focus {
   }
 
   .navbar .nav-item {
-    padding: 10px 16px !important;
-    font-size: 13px !important;
-    border-radius: 10px !important;
+    padding: 12px 20px !important;
+    font-size: 15px !important;
+    border-radius: 12px !important;
     flex: 1 !important;
     text-align: center !important;
-    min-width: 70px !important;
+    min-width: 80px !important;
+    font-weight: bold !important;
   }
 
   /* Container adjustment - paksa mobile layout */
@@ -1231,7 +1234,7 @@ select:focus {
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 15px !important;
+    padding: 20px 5px !important;
     box-sizing: border-box !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
