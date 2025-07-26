@@ -72,34 +72,34 @@ body::before {
 
 #gameContainer {
   position: relative;
-  text-align: center;
-  z-index: 1;
-  padding-top: 20px; /* Dikurangi karena navbar sudah relative */
   min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden; /* Prevent horizontal scroll */
-  overflow-y: auto; /* Allow vertical scroll if needed */
+  justify-content: center;
+  z-index: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 /* Navigation Bar */
 .navbar {
-  position: relative;
+  position: sticky;
+  top: 10px;
+  margin: 0 auto 20px auto;
   display: flex;
   justify-content: center;
   gap: 15px;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.95);
   padding: 10px;
   border-radius: 20px;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(15px);
   border: 2px solid rgba(0, 255, 65, 0.3);
   z-index: 1002;
   box-shadow: 0 3px 15px rgba(0, 0, 0, 0.5);
-  margin: 0 auto 20px auto;
   width: fit-content;
 }
 
@@ -128,12 +128,13 @@ body::before {
 /* UI Layout Container untuk Desktop */
 .game-layout {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   gap: 20px;
   width: 100%;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: auto;
+  position: relative;
 }
 
 /* Canvas Container */
@@ -220,18 +221,18 @@ canvas {
   position: relative;
   backdrop-filter: blur(2px);
   display: block;
-  margin: 5px auto;
+  margin: 0 auto;
   image-rendering: pixelated;
 
-  /* Default desktop size - fixed consistent size */
-  width: 900px !important;
-  height: 600px !important;
-  min-width: 900px;
-  min-height: 600px;
-  max-width: 900px;
-  max-height: 600px;
+  /* Default desktop size - reduced to 90% of original size */
+  width: 810px !important;
+  height: 540px !important;
+  min-width: 810px;
+  min-height: 540px;
+  max-width: 810px;
+  max-height: 540px;
   transform: scale(1);
-  transform-origin: center;
+  transform-origin: center center;
 }
 
 /* Removed all media queries for canvas - using fixed consistent size */
@@ -239,26 +240,33 @@ canvas {
 /* Mobile portrait - Tall canvas */
 @media (max-width: 768px) and (orientation: portrait) {
   body {
-    overflow-y: auto; /* Allow scrolling */
-    overflow-x: hidden; /* Prevent horizontal scroll */
+    overflow-y: auto;
+    overflow-x: hidden;
     height: auto;
     min-height: 100vh;
   }
 
   #gameContainer {
-    padding-top: 10px;
+    position: relative;
     min-height: 100vh;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    max-width: 100vw;
+    justify-content: center;
+    padding: 10px;
+    box-sizing: border-box;
     overflow-x: hidden;
+    overflow-y: auto;
   }
 
   /* Mobile: Kembali ke layout vertikal di atas canvas */
   .game-layout {
     flex-direction: column;
     gap: 10px;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
   }
 
   .gameUI-left,
@@ -309,14 +317,17 @@ canvas {
     max-width: 400px !important;
     max-height: 560px !important;
     border-width: 2px;
-    margin: 10px auto;
-    transform: none !important; /* Remove any transforms on mobile */
-    transform-origin: center;
+    margin: 0 auto;
+    transform: none !important;
+    transform-origin: center center;
+    position: relative;
   }
 
-  /* Mobile navbar - horizontal compact */
+  /* Mobile navbar - positioned sticky */
   .navbar {
-    position: relative;
+    position: sticky;
+    top: 5px;
+    margin: 0 auto 10px auto;
     width: 95vw;
     max-width: 400px;
     gap: 5px;
@@ -325,7 +336,8 @@ canvas {
     border-radius: 15px;
     flex-wrap: wrap;
     justify-content: space-around;
-    margin: 0 auto 15px auto;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(15px);
   }
 
   .navbar .nav-item {
@@ -361,10 +373,27 @@ canvas {
 
 /* Mobile landscape - Wide canvas */
 @media (max-width: 768px) and (orientation: landscape) {
+  #gameContainer {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
   /* Mobile landscape: tetap layout vertikal */
   .game-layout {
     flex-direction: column;
     gap: 10px;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
   }
 
   .gameUI-left,
@@ -412,29 +441,48 @@ canvas {
     min-width: 280px !important;
     min-height: 168px !important;
     border-width: 2px;
-    transform: none !important; /* Remove any transforms on mobile */
-    transform-origin: center;
+    transform: none !important;
+    transform-origin: center center;
+    margin: 0 auto;
+    position: relative;
   }
 
   .navbar {
-    position: relative;
+    position: sticky;
+    top: 5px;
+    margin: 0 auto 10px auto;
     gap: 8px;
     padding: 8px;
     font-size: 12px;
-    margin: 0 auto 15px auto;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(15px);
   }
 }
 
 /* Tablet and medium screens */
 @media (min-width: 768px) and (max-width: 1024px) {
+  #gameContainer {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
   /* Tablet: gunakan layout split tapi dengan elemen yang lebih compact */
   .game-layout {
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
     gap: 15px;
-    padding: 20px;
-    min-height: 100vh;
+    width: 100%;
+    max-width: 1000px;
   }
 
   .gameUI-left {
@@ -477,8 +525,8 @@ canvas {
   }
 
   canvas {
-    width: 540px !important;
-    height: 360px !important;
+    width: 486px !important;
+    height: 324px !important;
     display: block;
     border: 3px solid #00ff41;
     border-radius: 10px;
@@ -489,19 +537,38 @@ canvas {
       rgba(0, 0, 0, 0.9),
       rgba(0, 50, 100, 0.1)
     );
+    margin: 0 auto;
+    transform-origin: center center;
   }
 
   .navbar {
-    position: relative;
+    position: sticky;
+    top: 10px;
+    margin: 0 auto 15px auto;
     gap: 12px;
     padding: 10px;
     font-size: 14px;
-    margin: 0 auto 20px auto;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(15px);
   }
 }
 
 /* Extra small devices */
 @media (max-width: 480px) and (orientation: portrait) {
+  #gameContainer {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
   canvas {
     width: 98vw !important;
     height: calc(98vw * 1.5) !important; /* Taller for very small screens */
@@ -510,16 +577,21 @@ canvas {
     min-width: 250px !important;
     min-height: 375px !important;
     transform: none !important;
-    transform-origin: center;
+    transform-origin: center center;
+    margin: 0 auto;
+    position: relative;
   }
 
   .navbar {
-    position: relative;
+    position: sticky;
+    top: 5px;
+    margin: 0 auto 10px auto;
     width: 98vw;
     max-width: 350px;
     gap: 3px;
     padding: 6px;
-    margin: 0 auto 15px auto;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(15px);
   }
 
   .navbar .nav-item {
@@ -906,14 +978,28 @@ select:focus {
 /* Landscape mobile adjustments */
 @media (max-width: 768px) and (orientation: landscape) {
   #gameContainer {
-    padding-top: 20px; /* Konsisten dengan relative navbar */
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .navbar {
+    position: sticky;
     top: 5px;
+    margin: 0 auto 10px auto;
     gap: 8px;
     padding: 8px;
     font-size: 12px;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(15px);
   }
 
   .menu {
@@ -926,12 +1012,29 @@ select:focus {
 
 /* Tablet adjustments */
 @media (max-width: 1300px) and (min-width: 769px) {
-  .navbar {
+  #gameContainer {
     position: relative;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .navbar {
+    position: sticky;
+    top: 10px;
+    margin: 0 auto 15px auto;
     gap: 15px;
     padding: 12px;
     font-size: 14px;
-    margin: 0 auto 20px auto;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(15px);
   }
 
   .menu {
@@ -945,35 +1048,47 @@ select:focus {
 /* Large screens - Desktop konsisten */
 @media (min-width: 1400px) {
   #gameContainer {
-    padding-top: 20px; /* Konsisten dengan relative navbar */
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .navbar {
-    position: relative;
-    padding: 12px; /* Konsisten */
-    gap: 18px; /* Konsisten */
+    position: sticky;
+    top: 10px;
     margin: 0 auto 20px auto;
+    padding: 12px;
+    gap: 18px;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(15px);
   }
 
   .menu {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    padding: 25px; /* Konsisten */
+    padding: 25px;
   }
 
   #gameUI {
-    width: 1100px;
-    font-size: 15px; /* Konsisten */
-    gap: 18px; /* Konsisten */
+    width: 990px;
+    font-size: 15px;
+    gap: 18px;
   }
 
   canvas {
-    width: 1100px !important;
-    height: min(
-      600px,
-      60vh
-    ) !important; /* Tinggi dibatasi untuk desktop besar */
-    max-height: 600px;
+    width: 990px !important;
+    height: min(540px, 60vh) !important;
+    max-height: 540px;
+    margin: 0 auto;
+    transform-origin: center center;
   }
 }
