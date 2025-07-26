@@ -1123,12 +1123,12 @@ select:focus {
     display: flex !important; /* Override desktop hide */
     justify-content: space-between;
     align-items: center;
-    width: 95vw;
-    max-width: 600px;
-    margin: 0 auto 15px auto; /* Posisi di bawah navbar, di atas canvas */
-    font-size: 12px;
+    width: 98vw;
+    max-width: 750px;
+    margin: 0 auto 20px auto; /* Posisi di bawah navbar, di atas canvas */
+    font-size: 14px;
     font-weight: bold;
-    gap: 8px;
+    gap: 12px;
     flex-wrap: wrap;
     flex-direction: row;
   }
@@ -1139,7 +1139,7 @@ select:focus {
       rgba(0, 0, 0, 0.8),
       rgba(0, 50, 100, 0.3)
     );
-    padding: 8px 12px;
+    padding: 10px 16px;
     border-radius: 15px;
     border: 2px solid #00ff41;
     color: #00ff41;
@@ -1148,9 +1148,9 @@ select:focus {
       0 0 15px rgba(0, 255, 65, 0.3);
     backdrop-filter: blur(8px);
     transition: all 0.3s ease;
-    font-size: 11px;
+    font-size: 13px;
     flex: 1;
-    min-width: 70px;
+    min-width: 85px;
     text-align: center;
   }
 
@@ -1184,12 +1184,12 @@ select:focus {
 
   /* Adjust canvas size untuk mobile dengan desktop view */
   canvas {
-    width: 95vw !important;
-    height: calc(95vw * 0.67) !important; /* Maintain 3:2 aspect ratio */
-    max-width: 600px !important;
-    max-height: 400px !important;
-    min-width: 320px !important;
-    min-height: 214px !important;
+    width: 98vw !important;
+    height: calc(98vw * 0.67) !important; /* Maintain 3:2 aspect ratio */
+    max-width: 750px !important;
+    max-height: 500px !important;
+    min-width: 400px !important;
+    min-height: 268px !important;
     transform: none !important;
     transform-origin: center center;
     margin: 0 auto;
@@ -1200,12 +1200,12 @@ select:focus {
   .navbar {
     position: sticky !important;
     top: 10px !important;
-    margin: 0 auto 15px auto !important;
-    width: 95vw !important;
-    max-width: 600px !important;
-    gap: 8px !important;
-    padding: 10px !important;
-    font-size: 12px !important;
+    margin: 0 auto 20px auto !important;
+    width: 98vw !important;
+    max-width: 750px !important;
+    gap: 12px !important;
+    padding: 12px !important;
+    font-size: 14px !important;
     border-radius: 15px !important;
     flex-wrap: wrap !important;
     justify-content: space-around !important;
@@ -1214,12 +1214,12 @@ select:focus {
   }
 
   .navbar .nav-item {
-    padding: 8px 12px !important;
-    font-size: 11px !important;
-    border-radius: 8px !important;
+    padding: 10px 16px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
     flex: 1 !important;
     text-align: center !important;
-    min-width: 60px !important;
+    min-width: 70px !important;
   }
 
   /* Container adjustment - paksa mobile layout */
@@ -1231,7 +1231,7 @@ select:focus {
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 10px !important;
+    padding: 15px !important;
     box-sizing: border-box !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
