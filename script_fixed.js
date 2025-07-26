@@ -314,6 +314,27 @@ const startMenu = document.getElementById("startMenu");
 const gameOverMenu = document.getElementById("gameOverMenu");
 const winMenu = document.getElementById("winMenu");
 
+// Mobile Detection
+function isMobile() {
+  return (
+    window.innerWidth <= 768 ||
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    )
+  );
+}
+
+// Canvas Auto-Resize for Mobile
+function handleMobileCanvas() {
+  if (isMobile()) {
+    // Mobile device detected - CSS will handle the sizing
+    console.log("Mobile device detected, using responsive canvas");
+  } else {
+    // Desktop - ensure fixed size
+    console.log("Desktop device detected, using fixed canvas size");
+  }
+}
+
 // Player class
 class Player {
   constructor(x, y) {
@@ -1712,8 +1733,14 @@ function updateQuickPlayMode() {
 function updateQuickPlayUI() {
   const playTime = Math.floor(quickPlayTimer / 60); // Convert frames to seconds
   const quickPlayText = `Quick Play | Waktu: ${playTime}s | High Score: ${quickPlayHighScore} | Aliens: ${quickPlayAliens.length}`;
-  levelElement.textContent = quickPlayText;
-  if (levelElementDesktop) levelElementDesktop.textContent = quickPlayText;
+
+  // Safe UI update with error handling
+  try {
+    if (levelElement) levelElement.textContent = quickPlayText;
+    if (levelElementDesktop) levelElementDesktop.textContent = quickPlayText;
+  } catch (error) {
+    console.warn("Error updating Quick Play UI:", error);
+  }
 }
 
 function gameLoop() {
@@ -2539,6 +2566,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize music system immediately
   console.log("DOM Content Loaded, initializing music...");
 
+  // Mobile detection and setup
+  handleMobileCanvas();
+  console.log(
+    `Device type: ${isMobile() ? "Mobile" : "Desktop"}, Screen: ${
+      window.innerWidth
+    }x${window.innerHeight}`
+  );
+
   // Pastikan canvas ukuran tetap sejak awal
   updateCanvasSize();
 
@@ -2577,13 +2612,17 @@ document.addEventListener("DOMContentLoaded", () => {
 // Event listener untuk menjaga ukuran canvas tetap konsisten saat resize atau zoom
 window.addEventListener("resize", () => {
   updateCanvasSize();
+  handleMobileCanvas(); // Handle mobile canvas adjustments
 });
 
 // Event listener untuk mendeteksi zoom dan menjaga ukuran canvas
 window.addEventListener("wheel", (e) => {
   if (e.ctrlKey) {
     // Zoom detected, maintain canvas size
-    setTimeout(updateCanvasSize, 100);
+    setTimeout(() => {
+      updateCanvasSize();
+      handleMobileCanvas();
+    }, 100);
   }
 });
 

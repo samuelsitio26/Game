@@ -20,8 +20,8 @@ body {
   color: #fff;
   margin: 0;
   font-family: "Orbitron", "Arial", sans-serif;
-  overflow-x: auto;
-  overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  overflow-y: auto; /* Allow vertical scroll */
   position: relative;
   background-attachment: fixed;
   min-height: 100vh;
@@ -54,6 +54,13 @@ body::before {
   opacity: 0.8;
 }
 
+/* GitHub Pages Mobile Fix */
+@media (max-width: 768px) {
+  body::before {
+    background-attachment: scroll; /* Fix untuk mobile GitHub Pages */
+  }
+}
+
 @keyframes starfield {
   from {
     transform: translateY(0);
@@ -75,7 +82,8 @@ body::before {
   justify-content: flex-start;
   width: 100%;
   max-width: 100vw;
-  overflow-x: auto;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  overflow-y: auto; /* Allow vertical scroll if needed */
 }
 
 /* Navigation Bar */
@@ -215,7 +223,7 @@ canvas {
   margin: 5px auto;
   image-rendering: pixelated;
 
-  /* Fixed consistent size - tidak terpengaruh zoom */
+  /* Default desktop size - fixed consistent size */
   width: 900px !important;
   height: 600px !important;
   min-width: 900px;
@@ -232,16 +240,19 @@ canvas {
 @media (max-width: 768px) and (orientation: portrait) {
   body {
     overflow-y: auto; /* Allow scrolling */
+    overflow-x: hidden; /* Prevent horizontal scroll */
     height: auto;
     min-height: 100vh;
   }
 
   #gameContainer {
-    padding-top: 60px;
+    padding-top: 10px;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   /* Mobile: Kembali ke layout vertikal di atas canvas */
@@ -291,14 +302,16 @@ canvas {
   }
 
   canvas {
-    width: 95vw;
-    height: calc(95vw * 1.4); /* Portrait ratio 1:1.4 - Memanjang */
-    min-width: unset;
-    min-height: unset;
-    max-width: 400px;
-    max-height: 560px;
+    width: 95vw !important;
+    height: calc(95vw * 1.4) !important; /* Portrait ratio 1:1.4 - Memanjang */
+    min-width: 280px !important;
+    min-height: 390px !important;
+    max-width: 400px !important;
+    max-height: 560px !important;
     border-width: 2px;
     margin: 10px auto;
+    transform: none !important; /* Remove any transforms on mobile */
+    transform-origin: center;
   }
 
   /* Mobile navbar - horizontal compact */
@@ -392,13 +405,15 @@ canvas {
   }
 
   canvas {
-    width: 95vw;
-    height: calc(95vw * 0.6); /* Wide ratio 1:0.6 */
-    max-width: 768px;
-    max-height: 460px;
+    width: 95vw !important;
+    height: calc(95vw * 0.6) !important; /* Wide ratio 1:0.6 */
+    max-width: 768px !important;
+    max-height: 460px !important;
+    min-width: 280px !important;
+    min-height: 168px !important;
     border-width: 2px;
-    min-width: unset;
-    min-height: unset;
+    transform: none !important; /* Remove any transforms on mobile */
+    transform-origin: center;
   }
 
   .navbar {
@@ -488,10 +503,14 @@ canvas {
 /* Extra small devices */
 @media (max-width: 480px) and (orientation: portrait) {
   canvas {
-    width: 98vw;
-    height: calc(98vw * 1.5); /* Taller for very small screens */
-    max-width: 350px;
-    max-height: 525px;
+    width: 98vw !important;
+    height: calc(98vw * 1.5) !important; /* Taller for very small screens */
+    max-width: 350px !important;
+    max-height: 525px !important;
+    min-width: 250px !important;
+    min-height: 375px !important;
+    transform: none !important;
+    transform-origin: center;
   }
 
   .navbar {
