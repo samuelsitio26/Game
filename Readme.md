@@ -2,7 +2,7 @@
 
 ## 📂 File Structure Update
 
-**NEW: Code has been refactored for better maintainability!**
+**NEW: Code has been refactored for better maintainability!!**
 
 The game code is now split into two main files:
 
