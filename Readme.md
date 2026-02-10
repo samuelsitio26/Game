@@ -76,7 +76,7 @@ The game features an elegant main menu with:
 ![Gameplay](image/Screenshot%202025-07-23%20080921.png)
 
 Active gameplay showing:
-
+ 
 - Player spaceship at the bottom (blue ship)
 - Enemy invaders descending from the top
 - Bullet projectiles flying across the screen
